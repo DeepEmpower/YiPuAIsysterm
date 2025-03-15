@@ -78,6 +78,12 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         meta: { title: 'AI文员', keepAlive: true, icon: 'Document' }, // 设置标题、缓存和图标
       },
       {
+        path: '/home/AI_writer/feasibility-report',
+        component: () => import('@/views/home/AI_writer/FeasibilityReport.vue'),
+        name: 'FeasibilityReport',
+        meta: { title: '可研报告编写', keepAlive: true, icon: 'Document' },
+      },
+      {
         path: '/home/achieve', // AI人力路径
         component: () => import('@/views/home/achieve.vue'), // 懒加载AI人力组件
         name: 'achieve', // 路由名称

@@ -24,7 +24,7 @@
     <!-- AI文员卡片列表 -->
     <div class="ai-cards-container">
       <!-- 可研报告编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="openAssistant('feasibility')">
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="navigateToAssistant('feasibility-report')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar1.png" alt="可研报告编写">
         </div>
@@ -370,8 +370,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
 import { Plus, Edit, Delete } from '@element-plus/icons-vue';
+
+const router = useRouter();
 
 // 当前激活的标签
 const activeTab = ref('all');
@@ -482,95 +485,16 @@ const getInputPlaceholder = () => {
 
 // 打开助手对话框
 const openAssistant = (type) => {
-  documentGenerated.value = false;
+  currentAssistant.value = getAssistantInfo(type);
   documentConfig.value.content = '';
   documentConfig.value.type = type;
-  
-  const assistants = {
-    feasibility: {
-      id: 'feasibility',
-      title: '可研报告助手',
-      description: '迅速全面的选题报告制作，高效精准的市场研究与竞品分析。',
-      avatar: '@/assets/images/avatars/avatar1.png',
-      saveTime: '97%',
-      efficiency: '39倍'
-    },
-    product: {
-      id: 'product',
-      title: '产品策划助手',
-      description: '浏览所关注领域的最新资讯、行业动态、发现新选题，随时回答资讯问题。',
-      avatar: '@/assets/images/avatars/avatar2.png',
-      saveTime: '92%',
-      efficiency: '11.5倍'
-    },
-    sales: {
-      id: 'sales',
-      title: '销售报告助手',
-      description: '30秒提供写作灵感、1分钟完成图书大纲、3分钟优化3000字文稿，得心应手。',
-      avatar: '@/assets/images/avatars/avatar3.png',
-      saveTime: '93%',
-      efficiency: '14倍'
-    },
-    meeting: {
-      id: 'meeting',
-      title: '会议纪要助手',
-      description: '30秒自动整理会议记录，快速生成规范会议纪要，突出重点决议与行动项。',
-      avatar: '/src/assets/images/avatars/avatar4.png',
-      saveTime: '93%',
-      efficiency: '8.5倍'
-    },
-    report: {
-      id: 'report',
-      title: '工作报告助手',
-      description: '2分钟完成日报、周报、月报生成，数据可视化呈现，一键生成专业报告。',
-      avatar: '/src/assets/images/avatars/avatar5.png',
-      saveTime: '89%',
-      efficiency: '7.2倍'
-    },
-    proposal: {
-      id: 'proposal',
-      title: '方案撰写助手',
-      description: '3分钟输出完整项目方案，包含目标、计划、预算和风险评估，专业水准一键生成。',
-      avatar: '/src/assets/images/avatars/avatar6.png',
-      saveTime: '92%',
-      efficiency: '11.5倍'
-    },
-    notice: {
-      id: 'notice',
-      title: '公告通知助手',
-      description: '1分钟生成企业通知、公告、邮件，语言规范专业，满足各类正式场合需求。',
-      avatar: '/src/assets/images/avatars/avatar7.png',
-      saveTime: '86%',
-      efficiency: '6.8倍'
-    },
-    proofread: {
-      id: 'proofread',
-      title: '文档校对助手',
-      description: '30秒检查3000字文档，精准识别错别字、语法错误和表达不畅，提供专业修改建议。',
-      avatar: '/src/assets/images/avatars/avatar8.png',
-      saveTime: '94%',
-      efficiency: '16倍'
-    },
-    format: {
-      id: 'format',
-      title: '排版美化助手',
-      description: '2分钟智能排版整个文档，规范字体、段落、标题层级，美化页面布局，导出多种格式。',
-      avatar: '/src/assets/images/avatars/avatar9.png',
-      saveTime: '83%',
-      efficiency: '5.8倍'
-    },
-    contract: {
-      id: 'contract',
-      title: '合同格式助手',
-      description: '10分钟标准化处理合同文本，自动校对合同条款，确保格式统一，提高法律文档规范性。',
-      avatar: '/src/assets/images/avatars/avatar10.png',
-      saveTime: '78%',
-      efficiency: '4.6倍'
-    }
-  };
-  
-  Object.assign(currentAssistant, assistants[type]);
+  documentGenerated.value = false;
   dialogVisible.value = true;
+};
+
+// 导航到助手专属页面
+const navigateToAssistant = (route) => {
+  router.push(`/home/AI_writer/${route}`);
 };
 
 // 关闭对话框
