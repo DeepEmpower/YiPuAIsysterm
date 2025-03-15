@@ -68,14 +68,14 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
     path: '/', // 根路径
     name: 'layout', // 路由名称
     component: Layout, // 使用Layout布局组件
-    redirect: '/home/idear', // 重定向到"AI文员"页面
+    redirect: '/home/AI_writer/AIWriter', // 重定向到"AI文员"页面
     meta: { title: 'AI员工', icon: 'Calendar' }, // 设置菜单标题和图标
     children: [ // 子路由配置
       {
-        path: '/home/idear', // AI文员路径
-        component: () => import('@/views/home/idear.vue'), // 懒加载AI文员组件
-        name: 'idear', // 路由名称
-        meta: { title: 'AI文员', keepAlive: true, icon: 'Notebook' }, // 设置标题、缓存和图标
+        path: '/home/AI_writer/AIWriter', // AI文员路径
+        component: () => import('@/views/home/AI_writer/AIWriter.vue'), // 懒加载AI文员组件
+        name: 'AIWriter', // 路由名称
+        meta: { title: 'AI文员', keepAlive: true, icon: 'Document' }, // 设置标题、缓存和图标
       },
       {
         path: '/home/achieve', // AI人力路径
