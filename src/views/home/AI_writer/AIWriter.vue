@@ -39,7 +39,7 @@
       </div>
 
       <!-- 产品策划编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('product')">
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="navigateToAssistant('product-planning')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar2.png" alt="产品策划编写">
         </div>
@@ -54,7 +54,7 @@
       </div>
 
       <!-- 销售报告编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('sales')">
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="navigateToAssistant('sales-report')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar3.png" alt="销售报告编写">
         </div>
@@ -205,15 +205,11 @@
       </div>
       
       <!-- 添加自定义助手卡片 -->
-      <div 
-        class="ai-card add-assistant-card" 
-        v-if="activeTab === 'all' || activeTab === 'custom'"
-        @click="openCustomAssistantDialog()"
-      >
-        <div class="card-content add-content">
+      <div class="ai-card add-assistant-card" v-if="activeTab === 'custom' || activeTab === 'all'" @click="navigateToAssistant('custom-assistant')">
+        <div class="add-content">
           <el-icon class="add-icon"><Plus /></el-icon>
-          <h3 class="assistant-name">创建自定义AI助手</h3>
-          <p class="assistant-desc">自定义您专属的AI文员，满足个性化需求</p>
+          <h3>创建自定义AI助手</h3>
+          <p>定制专属领域的AI文员，上传知识库，打造私人助理</p>
         </div>
       </div>
     </div>

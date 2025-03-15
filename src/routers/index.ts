@@ -85,6 +85,27 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
+        path: '/home/AI_writer/product-planning',
+        component: () => import('@/views/home/AI_writer/ProductPlanningReport.vue'),
+        name: 'ProductPlanningReport',
+        meta: { title: '产品策划编写', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_writer/sales-report',
+        component: () => import('@/views/home/AI_writer/SalesReport.vue'),
+        name: 'SalesReport',
+        meta: { title: '销售报告编写', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_writer/custom-assistant',
+        component: () => import('@/views/home/AI_writer/CustomAssistant.vue'),
+        name: 'CustomAssistant',
+        meta: { title: '自定义AI助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
         path: '/home/achieve', // AI人力路径
         component: () => import('@/views/home/achieve.vue'), // 懒加载AI人力组件
         name: 'achieve', // 路由名称
@@ -95,8 +116,7 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         component: () => import('@/views/home/examine.vue'), // 懒加载审稿组件
         name: 'examine', // 路由名称
         meta: { title: '审稿', keepAlive: true, icon: 'FolderChecked' }, // 设置标题、缓存和图标
-      },
-     
+      }, 
       {
         path: '/home/AI_customer', // AI客服路径
         component: () => import('@/views/home/AI_customer.vue'), // 懒加载AI客服组件
