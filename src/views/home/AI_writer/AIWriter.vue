@@ -22,10 +22,57 @@
 
     <!-- AI文员卡片列表 -->
     <div class="ai-cards-container">
-      <!-- 文档编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="openAssistant('meeting')">
+      <!-- 可研报告编写 -->
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="openAssistant('feasibility')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar1.png" alt="会议纪要助手">
+          <img src="@/assets/images/avatars/avatar1.png" alt="可研报告编写">
+        </div>
+        <div class="card-content">
+          <h3 class="assistant-name">可研报告编写</h3>
+          <p class="assistant-desc">迅速全面的选题报告制作，高效精准的市场研究与竞品分析。</p>
+          <div class="efficiency-stats">
+            <span class="stat-item">最高省时比 <span class="highlight">97%</span></span>
+            <span class="stat-item">提效 <span class="highlight">39倍</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 产品策划编写 -->
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('product')">
+        <div class="card-avatar">
+          <img src="@/assets/images/avatars/avatar2.png" alt="产品策划编写">
+        </div>
+        <div class="card-content">
+          <h3 class="assistant-name">产品策划编写</h3>
+          <p class="assistant-desc">浏览所关注领域的最新资讯、行业动态、发现新选题，随时回答资讯问题。</p>
+          <div class="efficiency-stats">
+            <span class="stat-item">最高省时比 <span class="highlight">92%</span></span>
+            <span class="stat-item">提效 <span class="highlight">11.5倍</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 销售报告编写 -->
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('sales')">
+        <div class="card-avatar">
+          <img src="@/assets/images/avatars/avatar3.png" alt="销售报告编写">
+        </div>
+        <div class="card-content">
+          <h3 class="assistant-name">销售报告编写</h3>
+          <p class="assistant-desc">30秒提供写作灵感、1分钟完成图书大纲、3分钟优化3000字文稿，得心应手。</p>
+          <div class="efficiency-stats">
+            <span class="stat-item">最高省时比 <span class="highlight">93%</span></span>
+            <span class="stat-item">提效 <span class="highlight">14倍</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 以下是分类下的卡片，保持不变 -->
+      
+      <!-- 文档编写分类下的卡片 -->
+      <div class="ai-card" v-if="activeTab === 'document'" @click="openAssistant('meeting')">
+        <div class="card-avatar">
+          <img src="@/assets/images/avatars/avatar4.png" alt="会议纪要助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">会议纪要助手</h3>
@@ -37,9 +84,9 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="openAssistant('report')">
+      <div class="ai-card" v-if="activeTab === 'document'" @click="openAssistant('report')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar2.png" alt="工作报告助手">
+          <img src="@/assets/images/avatars/avatar5.png" alt="工作报告助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">工作报告助手</h3>
@@ -51,10 +98,10 @@
         </div>
       </div>
 
-      <!-- 内容生成 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('proposal')">
+      <!-- 内容生成分类下更多卡片 -->
+      <div class="ai-card" v-if="activeTab === 'content'" @click="openAssistant('proposal')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar3.png" alt="方案撰写助手">
+          <img src="@/assets/images/avatars/avatar6.png" alt="方案撰写助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">方案撰写助手</h3>
@@ -66,9 +113,9 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="openAssistant('notice')">
+      <div class="ai-card" v-if="activeTab === 'content'" @click="openAssistant('notice')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar4.png" alt="公告通知助手">
+          <img src="@/assets/images/avatars/avatar7.png" alt="公告通知助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">公告通知助手</h3>
@@ -81,9 +128,9 @@
       </div>
 
       <!-- 审核校对 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'review'" @click="openAssistant('proofread')">
+      <div class="ai-card" v-if="activeTab === 'review'" @click="openAssistant('proofread')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar5.png" alt="文档校对助手">
+          <img src="@/assets/images/avatars/avatar8.png" alt="文档校对助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">文档校对助手</h3>
@@ -96,9 +143,9 @@
       </div>
 
       <!-- 格式排版 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'format'" @click="openAssistant('format')">
+      <div class="ai-card" v-if="activeTab === 'format'" @click="openAssistant('format')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar6.png" alt="排版美化助手">
+          <img src="@/assets/images/avatars/avatar9.png" alt="排版美化助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">排版美化助手</h3>
@@ -110,9 +157,9 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'format'" @click="openAssistant('contract')">
+      <div class="ai-card" v-if="activeTab === 'format'" @click="openAssistant('contract')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar7.png" alt="合同格式助手">
+          <img src="@/assets/images/avatars/avatar10.png" alt="合同格式助手">
         </div>
         <div class="card-content">
           <h3 class="assistant-name">合同格式助手</h3>
@@ -294,11 +341,35 @@ const openAssistant = (type) => {
   documentConfig.value.type = type;
   
   const assistants = {
+    feasibility: {
+      id: 'feasibility',
+      title: '可研报告助手',
+      description: '迅速全面的选题报告制作，高效精准的市场研究与竞品分析。',
+      avatar: '@/assets/images/avatars/avatar1.png',
+      saveTime: '97%',
+      efficiency: '39倍'
+    },
+    product: {
+      id: 'product',
+      title: '产品策划助手',
+      description: '浏览所关注领域的最新资讯、行业动态、发现新选题，随时回答资讯问题。',
+      avatar: '@/assets/images/avatars/avatar2.png',
+      saveTime: '92%',
+      efficiency: '11.5倍'
+    },
+    sales: {
+      id: 'sales',
+      title: '销售报告助手',
+      description: '30秒提供写作灵感、1分钟完成图书大纲、3分钟优化3000字文稿，得心应手。',
+      avatar: '@/assets/images/avatars/avatar3.png',
+      saveTime: '93%',
+      efficiency: '14倍'
+    },
     meeting: {
       id: 'meeting',
       title: '会议纪要助手',
       description: '30秒自动整理会议记录，快速生成规范会议纪要，突出重点决议与行动项。',
-      avatar: '/src/assets/images/avatars/avatar1.png',
+      avatar: '/src/assets/images/avatars/avatar4.png',
       saveTime: '93%',
       efficiency: '8.5倍'
     },
@@ -306,7 +377,7 @@ const openAssistant = (type) => {
       id: 'report',
       title: '工作报告助手',
       description: '2分钟完成日报、周报、月报生成，数据可视化呈现，一键生成专业报告。',
-      avatar: '/src/assets/images/avatars/avatar2.png',
+      avatar: '/src/assets/images/avatars/avatar5.png',
       saveTime: '89%',
       efficiency: '7.2倍'
     },
@@ -314,7 +385,7 @@ const openAssistant = (type) => {
       id: 'proposal',
       title: '方案撰写助手',
       description: '3分钟输出完整项目方案，包含目标、计划、预算和风险评估，专业水准一键生成。',
-      avatar: '/src/assets/images/avatars/avatar3.png',
+      avatar: '/src/assets/images/avatars/avatar6.png',
       saveTime: '92%',
       efficiency: '11.5倍'
     },
@@ -322,7 +393,7 @@ const openAssistant = (type) => {
       id: 'notice',
       title: '公告通知助手',
       description: '1分钟生成企业通知、公告、邮件，语言规范专业，满足各类正式场合需求。',
-      avatar: '/src/assets/images/avatars/avatar4.png',
+      avatar: '/src/assets/images/avatars/avatar7.png',
       saveTime: '86%',
       efficiency: '6.8倍'
     },
@@ -330,7 +401,7 @@ const openAssistant = (type) => {
       id: 'proofread',
       title: '文档校对助手',
       description: '30秒检查3000字文档，精准识别错别字、语法错误和表达不畅，提供专业修改建议。',
-      avatar: '/src/assets/images/avatars/avatar5.png',
+      avatar: '/src/assets/images/avatars/avatar8.png',
       saveTime: '94%',
       efficiency: '16倍'
     },
@@ -338,7 +409,7 @@ const openAssistant = (type) => {
       id: 'format',
       title: '排版美化助手',
       description: '2分钟智能排版整个文档，规范字体、段落、标题层级，美化页面布局，导出多种格式。',
-      avatar: '/src/assets/images/avatars/avatar6.png',
+      avatar: '/src/assets/images/avatars/avatar9.png',
       saveTime: '83%',
       efficiency: '5.8倍'
     },
@@ -346,7 +417,7 @@ const openAssistant = (type) => {
       id: 'contract',
       title: '合同格式助手',
       description: '10分钟标准化处理合同文本，自动校对合同条款，确保格式统一，提高法律文档规范性。',
-      avatar: '/src/assets/images/avatars/avatar7.png',
+      avatar: '/src/assets/images/avatars/avatar10.png',
       saveTime: '78%',
       efficiency: '4.6倍'
     }
@@ -415,112 +486,61 @@ const saveDocument = () => {
 // 生成模拟文档
 const generateMockDocument = () => {
   const mockDocuments = {
-    meeting: {
-      title: '产品开发会议纪要',
+    feasibility: {
+      title: '市场调研报告',
       content: `
-        <h2>产品开发会议纪要</h2>
-        <p><strong>会议时间：</strong>2023年11月15日 14:00-16:00</p>
-        <p><strong>会议地点：</strong>公司会议室A</p>
-        <p><strong>参会人员：</strong>张总、李经理、王设计师、赵开发、钱测试</p>
-        <p><strong>会议主题：</strong>新产品功能规划与开发进度</p>
+        <h2>市场调研报告</h2>
+        <p><strong>调研时间：</strong>2023年10月1日 - 2023年11月15日</p>
+        <p><strong>调研目的：</strong>了解市场需求，分析竞争对手，确定产品定位。</p>
         
-        <h3>一、会议议程</h3>
-        <ol>
-          <li>回顾上周工作进展</li>
-          <li>讨论新功能设计方案</li>
-          <li>确定开发优先级</li>
-          <li>分配任务与确定时间线</li>
-        </ol>
+        <h3>一、市场概况</h3>
+        <p>当前市场呈现稳步增长态势，市场需求较上季度增长8.2%。主要竞争对手A公司推出新产品线，B公司加大了线上广告投入。我司市场份额从上季度的18.5%提升至19.3%。</p>
         
-        <h3>二、讨论内容</h3>
-        <p>1. 张总介绍了市场需求变化，强调新功能开发的必要性。</p>
-        <p>2. 王设计师展示了新界面原型，获得团队一致好评，同意按此方案执行。</p>
-        <p>3. 赵开发汇报了现有进度，当前完成度约75%，预计下周可完成核心功能开发。</p>
-        <p>4. 钱测试指出了几个现有功能的bug，团队讨论了修复方案。</p>
+        <h3>二、调研方法</h3>
+        <p>采用定量分析与定性分析相结合的方法，通过问卷调查、深度访谈和数据分析等手段。</p>
         
-        <h3>三、决议事项</h3>
+        <h3>三、调研结果</h3>
+        <p>1. 消费者偏好分析：</p>
         <ul>
-          <li>新功能将分两期上线，第一期包含核心功能，预计11月25日上线。</li>
-          <li>界面优化工作与功能开发同步进行，不延后排期。</li>
-          <li>已知bug优先级调整，P0级别bug本周必须修复。</li>
-          <li>下周二进行第一期功能的内部测试。</li>
+          <li>消费者对新产品的功能需求主要集中在提高效率和改善体验上。</li>
+          <li>超过70%的消费者表示愿意为新功能支付额外费用。</li>
         </ul>
+        <p>2. 竞争对手分析：</p>
+        <p>竞争对手A公司的新产品在市场上表现良好，但B公司加大了线上广告投入，对我司市场份额构成一定威胁。</p>
         
-        <h3>四、任务分配</h3>
-        <table border="1" style="width:100%; border-collapse: collapse;">
-          <tr>
-            <th>负责人</th>
-            <th>任务内容</th>
-            <th>截止日期</th>
-          </tr>
-          <tr>
-            <td>王设计师</td>
-            <td>完成详细界面设计稿</td>
-            <td>11月17日</td>
-          </tr>
-          <tr>
-            <td>赵开发</td>
-            <td>完成核心功能开发</td>
-            <td>11月21日</td>
-          </tr>
-          <tr>
-            <td>钱测试</td>
-            <td>准备测试用例</td>
-            <td>11月19日</td>
-          </tr>
-        </table>
+        <h3>四、结论与建议</h3>
+        <p>基于以上分析，建议我司继续保持现有市场份额，并适当增加线上广告投入，以应对竞争对手的挑战。</p>
         
-        <h3>五、下次会议安排</h3>
-        <p>时间：11月22日 14:00-15:00</p>
-        <p>地点：会议室A</p>
-        <p>主题：功能测试反馈与第二期开发规划</p>
-        
-        <p class="signature">会议记录：李经理</p>
-        <p class="signature">审核：张总</p>
+        <p class="signature">调研人：市场部 张三</p>
+        <p class="signature">审核：营销总监 李四</p>
       `
     },
-    report: {
-      title: '2023年第三季度市场营销报告',
+    product: {
+      title: '产品策划方案',
       content: `
-        <h2>2023年第三季度市场营销报告</h2>
-        <p class="report-date">报告期间：2023年7月1日 - 2023年9月30日</p>
+        <h2>产品策划方案</h2>
+        <p><strong>目标用户群体：</strong>25-45岁，注重生活品质的中高端人群</p>
+        <p><strong>产品概念：</strong>高品质、多功能、环保</p>
         
-        <div class="toc">
-          <h3>目录</h3>
-          <ul>
-            <li>1. 执行摘要</li>
-            <li>2. 市场概况</li>
-            <li>3. 营销活动成效</li>
-            <li>4. 预算执行情况</li>
-            <li>5. 客户分析</li>
-            <li>6. 问题与挑战</li>
-            <li>7. 下季度计划</li>
-          </ul>
-        </div>
+        <h3>一、市场分析</h3>
+        <p>当前市场呈现稳步增长态势，市场需求较上季度增长8.2%。主要竞争对手A公司推出新产品线，B公司加大了线上广告投入。我司市场份额从上季度的18.5%提升至19.3%。</p>
         
-        <h3>1. 执行摘要</h3>
-        <p>第三季度营销团队完成了3个主要营销活动，新增客户328家，同比增长12.3%。社交媒体粉丝增长20.5%，线上销售转化率提升2.8个百分点。总体营销投入回报率(ROI)达到315%，超过季度目标10%。</p>
+        <h3>二、产品定位</h3>
+        <p>基于市场分析，我司产品应定位为中高端市场，注重产品品质和功能性。</p>
         
-        <h3>2. 市场概况</h3>
-        <p>第三季度行业整体呈现稳步增长态势，市场需求较上季度增长8.2%。竞争格局方面，主要竞争对手A公司推出新产品线，B公司加大了线上广告投入。我司市场份额从上季度的18.5%提升至19.3%。</p>
-        
-        <h3>3. 营销活动成效</h3>
-        <h4>3.1 线上营销活动</h4>
+        <h3>三、产品特点</h3>
         <ul>
-          <li>搜索引擎广告：投入10万元，带来4,320次点击，转化280笔订单，ROI 267%</li>
-          <li>社交媒体推广：投入8.5万元，获得58.6万次曝光，粉丝增加12,500，间接带动销售增长15%</li>
-          <li>邮件营销：发送营销邮件32,000封，打开率28.3%，点击率9.5%，带来销售额约42万元</li>
+          <li>高品质：采用优质材料，确保产品耐用性和舒适性。</li>
+          <li>多功能：满足消费者多样化的需求。</li>
+          <li>环保：符合现代消费者对环保产品的需求。</li>
         </ul>
         
-        <h4>3.2 线下营销活动</h4>
-        <ul>
-          <li>行业展会：参展2场，接触潜在客户约650名，转化68家新客户，投入产出比6.2:1</li>
-          <li>客户研讨会：举办4场，累计参与客户152家，满意度评分9.2/10，促成续约率92%</li>
-        </ul>
+        <h3>四、营销策略</h3>
+        <p>1. 线上营销：利用社交媒体和搜索引擎广告吸引目标用户。</p>
+        <p>2. 线下活动：参加行业展会和举办客户研讨会，增加品牌曝光度。</p>
         
-        <h3>4. 预算执行情况</h3>
-        <p>Q3季度营销预算总额120万元，实际支出115.8万元，预算执行率96.5%。</p>
-        <p>主要预算分配：</p>
+        <h3>五、预算分配</h3>
+        <p>Q3季度营销预算总额120万元，主要分配如下：</p>
         <ul>
           <li>数字营销：48.5万元 (41.9%)</li>
           <li>内容创作：23.6万元 (20.4%)</li>
@@ -528,7 +548,36 @@ const generateMockDocument = () => {
           <li>品牌建设：11.5万元 (9.9%)</li>
         </ul>
         
-        <h3>7. 下季度计划</h3>
+        <p class="signature">策划人：产品部 王五</p>
+        <p class="signature">审核：市场部 赵六</p>
+      `
+    },
+    sales: {
+      title: '销售分析报告',
+      content: `
+        <h2>销售分析报告</h2>
+        <p><strong>分析周期：</strong>2023年7月1日 - 2023年9月30日</p>
+        
+        <h3>一、销售概况</h3>
+        <p>第三季度销售团队完成了3个主要营销活动，新增客户328家，同比增长12.3%。社交媒体粉丝增长20.5%，线上销售转化率提升2.8个百分点。总体营销投入回报率(ROI)达到315%，超过季度目标10%。</p>
+        
+        <h3>二、销售趋势</h3>
+        <p>1. 线上销售趋势：</p>
+        <p>搜索引擎广告：投入10万元，带来4,320次点击，转化280笔订单，ROI 267%</p>
+        <p>社交媒体推广：投入8.5万元，获得58.6万次曝光，粉丝增加12,500，间接带动销售增长15%</p>
+        <p>邮件营销：发送营销邮件32,000封，打开率28.3%，点击率9.5%，带来销售额约42万元</p>
+        
+        <h3>三、客户分析</h3>
+        <p>1. 客户满意度分析：</p>
+        <p>92%的客户表示对产品或服务感到满意，其中85%的客户表示会推荐给其他人。</p>
+        <p>2. 客户忠诚度分析：</p>
+        <p>75%的客户表示会继续购买我司产品，其中68%的客户表示会推荐给其他人。</p>
+        
+        <h3>四、问题与挑战</h3>
+        <p>1. 市场竞争激烈，主要竞争对手A公司推出新产品线。</p>
+        <p>2. 线上广告成本较高，需要优化投放策略。</p>
+        
+        <h3>五、下季度计划</h3>
         <p>基于Q3的数据分析，Q4将重点关注以下方向：</p>
         <ol>
           <li>加大社交媒体短视频内容投入，目标提升用户互动率25%</li>
@@ -537,8 +586,8 @@ const generateMockDocument = () => {
           <li>筹备明年Q1新产品发布的预热营销计划</li>
         </ol>
         
-        <p class="signature">报告提交人：市场部 李明</p>
-        <p class="signature">审核：营销总监 王佳</p>
+        <p class="signature">分析人：销售部 孙七</p>
+        <p class="signature">审核：营销总监 周八</p>
       `
     }
   };
