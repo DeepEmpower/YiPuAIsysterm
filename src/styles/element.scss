@@ -1,0 +1,15 @@
+.el-table__header th {
+  font-weight: bold;
+  color: #252525;
+  background: #fafafa;
+}
+
+.el-table .el-table__header th {
+  background: var(--el-fill-color-light) !important;
+}
+
+// 覆盖 Element Plus 默认菜单颜色
+.el-menu {
+  --el-menu-text-color: #000000 !important;
+  --el-menu-hover-text-color: #000000 !important;
+}

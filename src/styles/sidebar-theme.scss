@@ -1,0 +1,70 @@
+// 白色主题侧边栏
+.sidebar-container {
+  background-color: var(--sidebar-bg-color);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  
+  .el-menu {
+    background-color: var(--sidebar-bg-color);
+    border-right: none;
+    
+    .el-menu-item, .el-submenu__title {
+      color: #000000 !important;
+      
+      &:hover {
+        background-color: var(--sidebar-hover-bg);
+      }
+      
+      &.is-active {
+        color: var(--sidebar-active-text);
+        background-color: var(--sidebar-active-bg);
+        border-right: 3px solid var(--sidebar-active-text);
+      }
+    }
+  }
+  
+  // 菜单图标颜色
+  .el-menu-item [class^="el-icon-"], 
+  .el-submenu [class^="el-icon-"] {
+    color: #000000 !important;
+  }
+  
+  // 活跃状态的图标颜色
+  .el-menu-item.is-active [class^="el-icon-"], 
+  .el-submenu.is-active [class^="el-icon-"] {
+    color: var(--sidebar-active-text);
+  }
+  
+  // 下拉菜单样式
+  .el-submenu .el-menu {
+    background-color: var(--sidebar-bg-color);
+    
+    .el-menu-item {
+      &:hover {
+        background-color: var(--sidebar-hover-bg);
+      }
+      
+      &.is-active {
+        background-color: var(--sidebar-active-bg);
+      }
+    }
+  }
+}
+
+// 修改 Element Plus 下拉菜单样式
+.el-dropdown-menu {
+  background-color: var(--sidebar-bg-color);
+  border: 1px solid #ebeef5;
+  
+  .el-dropdown-menu__item {
+    color: var(--sidebar-text-color);
+    
+    &:hover {
+      background-color: var(--sidebar-hover-bg);
+      color: var(--sidebar-active-text);
+    }
+    
+    &.is-disabled {
+      color: #c0c4cc;
+    }
+  }
+} 
