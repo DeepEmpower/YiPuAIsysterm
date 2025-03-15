@@ -82,6 +82,7 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         component: () => import('@/views/home/AI_writer/FeasibilityReport.vue'),
         name: 'FeasibilityReport',
         meta: { title: '可研报告编写', keepAlive: true, icon: 'Document' },
+        hidden: true,
       },
       {
         path: '/home/achieve', // AI人力路径
