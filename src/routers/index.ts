@@ -106,6 +106,13 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
+        path: '/home/AI_writer/custom-creation',
+        component: () => import('@/views/home/AI_writer/CustomCreation.vue'),
+        name: 'CustomCreation',
+        meta: { title: '创建自定义助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
         path: '/home/achieve', // AI人力路径
         component: () => import('@/views/home/achieve.vue'), // 懒加载AI人力组件
         name: 'achieve', // 路由名称
