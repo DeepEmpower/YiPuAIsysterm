@@ -1,150 +1,195 @@
 <template>
   <div class="report-generator-container fixed-height">
-    <div class="report-header glass-panel">
-      <h2>企业报表生成</h2>
-      <div class="header-actions">
-        <el-button type="primary" @click="generateReport">生成报表</el-button>
-        <el-button @click="exportReport" :disabled="!reportGenerated">导出报表</el-button>
-      </div>
-    </div>
+    <!-- 主体内容区域 - 左右两栏布局 -->
+    <div class="main-content">
+      <!-- 左侧：配置区域 -->
+      <div class="config-column">
+        <!-- 报表基本配置 -->
+        <div class="report-config-section">
+          <div class="section-title">
+            <h3><el-icon><Document /></el-icon> 报表配置</h3>
+          </div>
+          
+          <el-form :model="reportConfig" label-width="120px">
+            <el-form-item label="报表类型">
+              <el-select v-model="reportConfig.type" placeholder="请选择报表类型">
+                <el-option label="财务报表" value="financial" />
+                <el-option label="销售报表" value="sales" />
+                <el-option label="人力资源报表" value="hr" />
+                <el-option label="生产报表" value="production" />
+                <el-option label="客户分析报表" value="customer" />
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="时间范围">
+              <el-date-picker
+                v-model="reportConfig.dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                format="YYYY-MM-DD"
+              />
+            </el-form-item>
+            
+            <el-form-item label="数据来源">
+              <el-select v-model="reportConfig.dataSource" placeholder="请选择数据来源">
+                <el-option label="系统数据库" value="system" />
+                <el-option label="Excel导入" value="excel" />
+                <el-option label="外部API" value="api" />
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="报表格式">
+              <el-radio-group v-model="reportConfig.format">
+                <el-radio label="excel">Excel</el-radio>
+                <el-radio label="pdf">PDF</el-radio>
+                <el-radio label="word">Word</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-form>
+        </div>
+        
+        <!-- 表格配置区域 -->
+        <div class="table-guide">
+          <div class="guide-content">
+            <h3><el-icon><DataAnalysis /></el-icon> 表格配置</h3>
+            
+            <!-- 数据表配置选择器 -->
+            <div class="table-config-selector">
+              <!-- 搜索输入框 -->
+              <div class="search-input">
+                <div class="input-label">
+                  <el-icon class="recommendation-icon"><ChatLineRound /></el-icon> AI推荐报表
+                </div>
+                <el-input 
+                  v-model="tableSearchInput"
+                  placeholder="输入关键词，AI将为您推荐相关报表"
+                  @keyup.enter="handleInputSearch"
+                  prefix-icon="Search"
+                  size="large"
+                  type="textarea"
+                  :rows="2"
+                  :autosize="{ minRows: 2, maxRows: 4 }"
+                  clearable
+                ></el-input>
+              </div>
 
-    <div class="report-config-section">
-      <div class="section-title">
-        <h3><el-icon><Document /></el-icon> 报表配置</h3>
+              <!-- 两栏布局: AI推荐和自定义表格 -->
+              <div class="tables-container">
+                <!-- 左侧: AI推荐表格 -->
+                <div class="table-column ai-recommendations glass-panel">
+                  <div class="column-title">
+                    <el-icon><ChatLineRound /></el-icon> AI推荐的报表
+                  </div>
+                  <div class="table-items">
+                    <div 
+                      v-for="(table, index) in aiRecommendedTables" 
+                      :key="index"
+                      class="table-item"
+                      @click="toggleTableSelection(table)"
+                    >
+                      <el-checkbox v-model="table.selected"></el-checkbox>
+                      <span>{{ table.name }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 右侧: 用户自定义表格 -->
+                <div class="table-column custom-tables glass-panel">
+                  <div class="column-title">
+                    <el-icon><User /></el-icon> 用户自定义表格
+                  </div>
+                  <div class="table-items">
+                    <div 
+                      v-for="(table, index) in customTables" 
+                      :key="index"
+                      class="table-item"
+                      @click="toggleTableSelection(table)"
+                    >
+                      <el-checkbox v-model="table.selected"></el-checkbox>
+                      <span>{{ table.name }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 自定义和搜索 -->
+              <div class="action-row">
+                <div class="input-label smaller">
+                  <el-icon><Plus /></el-icon> 查找自定义表格
+                </div>
+                <el-input 
+                  v-model="customTableName"
+                  placeholder="输入表名关键词进行查找"
+                  class="custom-input"
+                  @keyup.enter="searchTableByName"
+                  prefix-icon="Search"
+                ></el-input>
+                <el-button type="primary" @click="searchTableByName">查找</el-button>
+              </div>
+            </div>
+
+            <!-- 搜索结果提示 -->
+            <div 
+              class="search-result-tip" 
+              :class="searchResultMessageType"
+              v-if="searchResultMessage"
+            >
+              {{ searchResultMessage }}
+            </div>
+          </div>
+        </div>
       </div>
       
-      <el-form :model="reportConfig" label-width="120px">
-        <el-form-item label="报表类型">
-          <el-select v-model="reportConfig.type" placeholder="请选择报表类型">
-            <el-option label="财务报表" value="financial" />
-            <el-option label="销售报表" value="sales" />
-            <el-option label="人力资源报表" value="hr" />
-            <el-option label="生产报表" value="production" />
-            <el-option label="客户分析报表" value="customer" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="reportConfig.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        
-        <el-form-item label="数据来源">
-          <el-select v-model="reportConfig.dataSource" placeholder="请选择数据来源">
-            <el-option label="系统数据库" value="system" />
-            <el-option label="Excel导入" value="excel" />
-            <el-option label="外部API" value="api" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="报表格式">
-          <el-radio-group v-model="reportConfig.format">
-            <el-radio label="excel">Excel</el-radio>
-            <el-radio label="pdf">PDF</el-radio>
-            <el-radio label="word">Word</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <!-- 如果报表已生成，显示报表预览 -->
-    <div v-if="reportGenerated" class="report-preview-section">
-      <h3>报表预览</h3>
-      <div class="report-preview">
-        <!-- 根据不同报表类型显示不同的预览组件 -->
-        <component :is="currentReportComponent" :data="reportData"></component>
-      </div>
-    </div>
-    
-    <!-- 如果报表未生成，显示引导信息 -->
-    <div v-else class="report-guide">
-      <div class="guide-content">
-        <h3><el-icon><DataAnalysis /></el-icon> 表格配置</h3>
-        
-        <!-- 数据表配置选择器 -->
-        <div class="table-config-selector">
-          <!-- 搜索输入框 -->
-          <div class="search-input">
-            <div class="input-label">
-              <el-icon><ChatLineRound /></el-icon> AI推荐报表
+      <!-- 右侧：报表预览区域 -->
+      <div class="preview-column">
+        <div class="report-preview-section glass-panel">
+          <div class="section-title">
+            <div class="title-content">
+              <h3><el-icon><DocumentCopy /></el-icon> 报表预览</h3>
             </div>
-            <el-input 
-              v-model="tableSearchInput"
-              placeholder="输入关键词，AI将为您推荐相关报表"
-              @keyup.enter="handleInputSearch"
-              prefix-icon="Search"
-              clearable
-            ></el-input>
+            <div class="title-actions">
+              <el-button type="primary" @click="generateReport" size="small">
+                <el-icon><RefreshRight /></el-icon> 生成报表
+              </el-button>
+              <el-button @click="exportReport" :disabled="!reportGenerated" size="small">
+                <el-icon><Download /></el-icon> 导出报表
+              </el-button>
+            </div>
           </div>
-
-          <!-- 两栏布局: AI推荐和自定义表格 -->
-          <div class="tables-container">
-            <!-- 左侧: AI推荐表格 -->
-            <div class="table-column ai-recommendations glass-panel">
-              <div class="column-title">
-                <el-icon><ChatLineRound /></el-icon> AI推荐的报表
-              </div>
-              <div class="table-items">
-                <div 
-                  v-for="(table, index) in aiRecommendedTables" 
-                  :key="index"
-                  class="table-item"
-                  @click="toggleTableSelection(table)"
-                >
-                  <el-checkbox v-model="table.selected"></el-checkbox>
-                  <span>{{ table.name }}</span>
+          
+          <!-- 报表内容区域(添加滚动条) -->
+          <div class="report-content-wrapper">
+            <!-- 报表未生成时显示提示 -->
+            <div v-if="!reportGenerated" class="empty-preview">
+              <div class="preview-placeholder">
+                <el-icon :size="60" class="preview-icon"><DataAnalysis /></el-icon>
+                <h4>报表预览区域</h4>
+                <p>请完成左侧配置并点击"生成报表"按钮</p>
+                <div class="preview-tips">
+                  <div class="tip-item">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>选择所需的报表类型和时间范围</span>
+                  </div>
+                  <div class="tip-item">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>从AI推荐或自定义表格中选择所需数据表</span>
+                  </div>
+                  <div class="tip-item">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>点击上方"生成报表"按钮查看结果</span>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <!-- 右侧: 用户自定义表格 -->
-            <div class="table-column custom-tables glass-panel">
-              <div class="column-title">
-                <el-icon><User /></el-icon> 用户自定义表格
-              </div>
-              <div class="table-items">
-                <div 
-                  v-for="(table, index) in customTables" 
-                  :key="index"
-                  class="table-item"
-                  @click="toggleTableSelection(table)"
-                >
-                  <el-checkbox v-model="table.selected"></el-checkbox>
-                  <span>{{ table.name }}</span>
-                </div>
-              </div>
+            <!-- 报表已生成时显示预览内容 -->
+            <div v-else class="report-content">
+              <!-- 根据不同报表类型显示不同的预览组件 -->
+              <component :is="currentReportComponent" :data="reportData"></component>
             </div>
           </div>
-
-          <!-- 自定义和搜索 -->
-          <div class="action-row">
-            <div class="input-label smaller">
-              <el-icon><Plus /></el-icon> 查找自定义表格
-            </div>
-            <el-input 
-              v-model="customTableName"
-              placeholder="输入表名关键词进行查找"
-              class="custom-input"
-              @keyup.enter="searchTableByName"
-              prefix-icon="Search"
-            ></el-input>
-            <el-button type="primary" @click="searchTableByName">查找</el-button>
-          </div>
-        </div>
-
-        <!-- 搜索结果提示 -->
-        <div 
-          class="search-result-tip" 
-          :class="searchResultMessageType"
-          v-if="searchResultMessage"
-        >
-          {{ searchResultMessage }}
         </div>
       </div>
     </div>
@@ -153,7 +198,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue';
-import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus } from '@element-plus/icons-vue';
+import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
 
 // 修正引入路径
@@ -432,48 +477,46 @@ const generateMockData = () => {
 /* 添加过渡动画 */
 .table-item,
 .el-button,
-.glass-panel {
-  transition: all 0.2s ease;
+.glass-panel,
+.preview-column {
+  transition: all 0.3s ease;
+}
+
+/* 固定高度布局 */
+.fixed-height {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .report-generator-container {
-  padding: 16px;
+  padding: 12px;
   background-color: #f5f7fa;
-  
-  /* 玻璃面板效果 */
-  .glass-panel {
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-  }
-  
-  .report-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding: 15px 20px;
-    border-radius: 8px;
-    
-    h2 {
-      margin: 0;
-      font-size: 22px;
-      color: #4d6fc9;
-    }
-    
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
-  }
+}
+
+/* 玻璃面板效果 */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+}
+
+.report-generator-container {
+  padding: 12px;
+  background-color: #f5f7fa;
   
   .report-config-section {
     background-color: white;
-    padding: 20px;
+    padding: 16px;
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
     max-height: 235px;
     overflow-y: auto;
     
@@ -492,19 +535,112 @@ const generateMockData = () => {
   .report-preview-section {
     flex: 1;
     background-color: white;
-    padding: 20px;
+    padding: 16px;
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    overflow: auto;
+    overflow: hidden;
     
-    h3 {
-      margin-top: 0;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #e0e0e0;
+    .report-content-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 5px; /* 为滚动条预留空间 */
     }
     
-    .report-preview {
-      padding: 15px 0;
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      
+      .title-content {
+        display: flex;
+        align-items: center;
+      }
+      
+      .title-actions {
+        display: flex;
+        gap: 10px;
+        
+        .el-button {
+          transition: all 0.2s ease;
+          
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          
+          .el-icon {
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+    
+    .preview-content {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+      
+      .empty-preview {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #909399;
+        
+        .preview-placeholder {
+          text-align: center;
+          width: 100%;
+          padding: 30px 20px;
+          
+          .preview-icon {
+            color: #c0c4cc;
+            margin-bottom: 20px;
+          }
+          
+          h4 {
+            font-size: 18px;
+            color: #606266;
+            margin: 0 0 10px 0;
+          }
+          
+          p {
+            color: #909399;
+            margin: 0 0 25px 0;
+          }
+          
+          .preview-tips {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            
+            .tip-item {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 12px;
+              color: #606266;
+              
+              .el-icon {
+                color: #4d6fc9;
+                font-size: 16px;
+              }
+            }
+          }
+        }
+      }
+      
+      .report-content {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
     }
   }
   
@@ -527,7 +663,7 @@ const generateMockData = () => {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin: 0 0 20px 0;
+        margin: 0 0 12px 0;
         color: #4d6fc9;
         font-size: 18px;
         
@@ -543,140 +679,83 @@ const generateMockData = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #fff;
-    border-radius: 4px;
-    padding: 16px;
-    margin-bottom: 10px;
+    gap: 15px;
     overflow: hidden;
-    
-    .input-label {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: #606266;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      
-      &.smaller {
-        font-size: 13px;
-        margin-bottom: 6px;
-      }
-    }
+    max-height: calc(100% - 80px); /* 减小高度，给搜索框留更多空间 */
     
     .search-input {
-      margin-bottom: 12px;
+      margin-bottom: 15px;
+      padding: 12px;
+      background-color: #f9fafc;
+      border-radius: 8px;
+      border: 1px solid #e6e9f1;
+      display: flex;
+      flex-direction: column;
+      
+      .input-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 15px;
+        font-weight: 500;
+        color: #4d6fc9;
+        
+        .recommendation-icon {
+          font-size: 18px;
+          margin-right: 6px;
+        }
+      }
+      
+      .el-input {
+        :deep(.el-input__wrapper) {
+          padding: 8px 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        :deep(.el-input__inner) {
+          font-size: 14px;
+        }
+        
+        :deep(.el-textarea__inner) {
+          padding: 10px 12px;
+          font-size: 14px;
+          min-height: 60px;
+          resize: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          border-radius: 6px;
+        }
+      }
     }
     
     .tables-container {
       flex: 1;
       display: flex;
-      gap: 20px;
-      margin-bottom: 12px;
+      gap: 12px;
+      margin-bottom: 8px;
       min-height: 0; /* 关键设置：允许flex子项在需要时收缩 */
       
       .table-column {
         flex: 1;
         border-radius: 4px;
-        padding: 12px;
+        padding: 8px;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        background-color: #f5f7fa;
         
         .column-title {
+          font-weight: 500;
+          margin-bottom: 8px;
+          font-size: 14px;
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-weight: bold;
-          margin-bottom: 15px;
-          color: #333;
-          font-size: 14px;
-          
-          .el-icon {
-            color: #4d6fc9;
-          }
+          gap: 5px;
         }
         
         .table-items {
-          flex: 1; /* 填充剩余空间 */
-          min-height: 0; /* 允许在需要时收缩 */
+          flex: 1;
           overflow-y: auto;
-          padding-right: 5px; /* 为滚动条留出空间 */
-          /* 美化滚动条 */
-          &::-webkit-scrollbar {
-            width: 6px;
-          }
-          
-          &::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-          }
-          
-          &::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-          }
-          
-          &::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-          }
-          
-          .table-item {
-            display: flex;
-            align-items: center;
-            background-color: #4d6fc9;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            
-            &:hover {
-              background-color: #5e7dd6;
-              transform: translateY(-2px);
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .el-checkbox {
-              margin-right: 8px;
-              
-              :deep(.el-checkbox__input) {
-                .el-checkbox__inner {
-                  background-color: transparent;
-                  border-color: white;
-                }
-                
-                &.is-checked {
-                  .el-checkbox__inner {
-                    background-color: white;
-                    border-color: white;
-                    
-                    &::after {
-                      border-color: #4d6fc9;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    .action-row {
-      display: flex;
-      gap: 15px;
-      
-      .custom-input {
-        flex: 1;
-      }
-      
-      .el-button {
-        width: 120px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+          max-height: 180px; /* 减小表格高度 */
         }
       }
     }
@@ -702,11 +781,226 @@ const generateMockData = () => {
   }
 }
 
-/* 固定高度布局 */
-.fixed-height {
-  height: 100vh;
+/* 主内容区域 - 左右两栏布局 */
+.main-content {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  min-height: 0; /* 确保可以被压缩 */
   overflow: hidden;
+  padding-top: 4px; /* 由于移除了顶部标题，添加一点上边距 */
+  
+  /* 左侧配置栏 */
+  .config-column {
+    flex: 0.8;
+    min-width: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 5px; /* 为滚动条预留空间 */
+  }
+  
+  /* 右侧预览栏 */
+  .preview-column {
+    flex: 1.2;
+    min-width: 0;
+    overflow: hidden; /* 保持外部容器不滚动 */
+    
+    &:hover {
+      flex: 1.3; /* 悬停时略微放大 */
+    }
+  }
+}
+
+.report-config-section {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  max-height: 235px;
+  overflow-y: auto;
+  
+  .section-title h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #4d6fc9;
+    
+    .el-icon {
+      font-size: 20px;
+    }
+  }
+}
+
+.table-guide {
+  flex: 1;
+  display: block;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  overflow-y: hidden;
+  
+  .guide-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px 0;
+      color: #4d6fc9;
+      font-size: 18px;
+      
+      .el-icon {
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+/* 报表预览区域样式 */
+.report-preview-section {
+  height: 100%;
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  
+  .report-content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px; /* 为滚动条预留空间 */
+  }
+  
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    .title-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    .title-actions {
+      display: flex;
+      gap: 10px;
+      
+      .el-button {
+        transition: all 0.2s ease;
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .el-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+  
+  .preview-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+    
+    .empty-preview {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #909399;
+      
+      .preview-placeholder {
+        text-align: center;
+        width: 100%;
+        padding: 30px 20px;
+        
+        .preview-icon {
+          color: #c0c4cc;
+          margin-bottom: 20px;
+        }
+        
+        h4 {
+          font-size: 18px;
+          color: #606266;
+          margin: 0 0 10px 0;
+        }
+        
+        p {
+          color: #909399;
+          margin: 0 0 25px 0;
+        }
+        
+        .preview-tips {
+          margin-top: 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          max-width: 450px;
+          margin-left: auto;
+          margin-right: auto;
+          text-align: left;
+          
+          .tip-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: #606266;
+            
+            .el-icon {
+              color: #4d6fc9;
+              font-size: 16px;
+            }
+          }
+        }
+      }
+    }
+    
+    .report-content {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+/* 各种报表组件的通用样式 */
+.sales-report, .hr-report, .production-report, .customer-report {
+  padding: 15px 0;
+}
+
+/* 空预览提示 */
+.empty-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+}
+
+/* 确保表格和图表区域正常显示 */
+.chart, .distribution-chart {
+  min-height: 300px;
+  margin: 15px 0;
+}
+
+/* 确保表格正常显示 */
+.el-table {
+  margin-bottom: 20px;
 }
 </style> 
