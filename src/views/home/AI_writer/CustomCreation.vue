@@ -1,136 +1,151 @@
 <template>
   <div class="custom-creation-container">
-    <div class="creation-header">
-      <div class="header-left">
-        <el-icon class="back-icon" @click="goBack"><Back /></el-icon>
-        <span>创建自定义AI助手</span>
+    <!-- 创建成功页面 -->
+    <div class="success-page" v-if="showSuccess">
+      <div class="success-icon">
+        <el-icon><Check /></el-icon>
       </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="saveAssistant">保存创建</el-button>
+      <div class="success-title">自定义AI员工创建成功</div>
+      <div class="success-actions">
+        <el-button plain @click="goToList">返回自定义AI员工列表</el-button>
+        <el-button type="primary" @click="goToKnowledgeTraining">去知识库训练</el-button>
       </div>
     </div>
+    
+    <!-- 创建表单 -->
+    <div class="creation-wrapper" v-else>
+      <div class="creation-header">
+        <div class="header-left">
+          <el-icon class="back-icon" @click="goBack"><Back /></el-icon>
+          <span>创建自定义AI助手</span>
+        </div>
+        <div class="header-actions">
+          <el-button type="primary" @click="saveAssistant">保存创建</el-button>
+        </div>
+      </div>
 
-    <div class="creation-form">
-      <el-form :model="formData" label-position="top" :rules="rules" ref="formRef">
-        <!-- AI员工昵称 -->
-        <el-form-item label="AI员工昵称" prop="name" required>
-          <el-input 
-            v-model="formData.name" 
-            placeholder="请输入2-10个字的AI员工昵称"
-            maxlength="10"
-            show-word-limit
-          ></el-input>
-        </el-form-item>
+      <div class="creation-form">
+        <el-form :model="formData" label-position="top" :rules="rules" ref="formRef">
+          <!-- AI员工昵称 -->
+          <el-form-item label="AI员工昵称" prop="name" required>
+            <el-input 
+              v-model="formData.name" 
+              placeholder="请输入2-10个字的AI员工昵称"
+              maxlength="10"
+              show-word-limit
+            ></el-input>
+          </el-form-item>
 
-        <!-- AI员工形象 -->
-        <el-form-item label="AI员工形象" prop="avatar" required>
-          <div class="avatar-selection">
-            <div 
-              v-for="(avatar, index) in avatarOptions" 
-              :key="index" 
-              class="avatar-option"
-              :class="{ active: formData.avatar === avatar.value }"
-              @click="selectAvatar(avatar.value)"
-            >
-              <img :src="avatar.url" :alt="avatar.label">
-              <div class="avatar-check" v-if="formData.avatar === avatar.value">
-                <el-icon><Check /></el-icon>
-              </div>
-            </div>
-            
-            <div class="avatar-upload" @click="handleAvatarUpload">
-              <el-icon><Plus /></el-icon>
-              <span>自定义头像</span>
-              <input 
-                type="file" 
-                ref="avatarInput" 
-                style="display: none" 
-                accept="image/*"
-                @change="onAvatarFileChange"
+          <!-- AI员工形象 -->
+          <el-form-item label="AI员工形象" prop="avatar" required>
+            <div class="avatar-selection">
+              <div 
+                v-for="(avatar, index) in avatarOptions" 
+                :key="index" 
+                class="avatar-option"
+                :class="{ active: formData.avatar === avatar.value }"
+                @click="selectAvatar(avatar.value)"
               >
-            </div>
-          </div>
-          
-          <div class="avatar-upload-tip">
-            自定义头像建议：宽500像素，高500像素的jpg、png、gif图片，图片大小建议在5M以内。
-          </div>
-        </el-form-item>
-
-        <!-- AI员工声音 -->
-        <el-form-item label="AI员工声音" prop="voice" required>
-          <div class="voice-options">
-            <div 
-              class="voice-option" 
-              :class="{ active: formData.voice === 'xiaoxiao' }"
-              @click="selectVoice('xiaoxiao')"
-            >
-              <div class="voice-option-left">
-                <div class="voice-avatar">
-                  <img src="@/assets/images/voices/voice-female.png" alt="晓晓">
-                </div>
-                <div class="voice-info">
-                  <div class="voice-name">晓晓</div>
-                  <div class="voice-desc">活泼、温暖的声音，具有多种场景风格和情感。</div>
+                <img :src="avatar.url" :alt="avatar.label">
+                <div class="avatar-check" v-if="formData.avatar === avatar.value">
+                  <el-icon><Check /></el-icon>
                 </div>
               </div>
-              <div class="voice-option-right">
-                <el-button circle @click.stop="playVoice('xiaoxiao')">
-                  <el-icon><VideoPlay /></el-icon>
-                </el-button>
+              
+              <div class="avatar-upload" @click="handleAvatarUpload">
+                <el-icon><Plus /></el-icon>
+                <span>自定义头像</span>
+                <input 
+                  type="file" 
+                  ref="avatarInput" 
+                  style="display: none" 
+                  accept="image/*"
+                  @change="onAvatarFileChange"
+                >
               </div>
             </div>
             
-            <div 
-              class="voice-option" 
-              :class="{ active: formData.voice === 'yunyang' }"
-              @click="selectVoice('yunyang')"
-            >
-              <div class="voice-option-left">
-                <div class="voice-avatar">
-                  <img src="@/assets/images/voices/voice-male.png" alt="云扬">
+            <div class="avatar-upload-tip">
+              自定义头像建议：宽500像素，高500像素的jpg、png、gif图片，图片大小建议在5M以内。
+            </div>
+          </el-form-item>
+
+          <!-- AI员工声音 -->
+          <el-form-item label="AI员工声音" prop="voice" required>
+            <div class="voice-options">
+              <div 
+                class="voice-option" 
+                :class="{ active: formData.voice === 'xiaoxiao' }"
+                @click="selectVoice('xiaoxiao')"
+              >
+                <div class="voice-option-left">
+                  <div class="voice-avatar">
+                    <img src="@/assets/images/voices/voice-female.png" alt="晓晓">
+                  </div>
+                  <div class="voice-info">
+                    <div class="voice-name">晓晓</div>
+                    <div class="voice-desc">活泼、温暖的声音，具有多种场景风格和情感。</div>
+                  </div>
                 </div>
-                <div class="voice-info">
-                  <div class="voice-name">云扬</div>
-                  <div class="voice-desc">专业、清晰的声音，具有多种场景风格。</div>
+                <div class="voice-option-right">
+                  <el-button circle @click.stop="playVoice('xiaoxiao')">
+                    <el-icon><VideoPlay /></el-icon>
+                  </el-button>
                 </div>
               </div>
-              <div class="voice-option-right">
-                <el-button circle @click.stop="playVoice('yunyang')">
-                  <el-icon><VideoPlay /></el-icon>
-                </el-button>
+              
+              <div 
+                class="voice-option" 
+                :class="{ active: formData.voice === 'yunyang' }"
+                @click="selectVoice('yunyang')"
+              >
+                <div class="voice-option-left">
+                  <div class="voice-avatar">
+                    <img src="@/assets/images/voices/voice-male.png" alt="云扬">
+                  </div>
+                  <div class="voice-info">
+                    <div class="voice-name">云扬</div>
+                    <div class="voice-desc">专业、清晰的声音，具有多种场景风格。</div>
+                  </div>
+                </div>
+                <div class="voice-option-right">
+                  <el-button circle @click.stop="playVoice('yunyang')">
+                    <el-icon><VideoPlay /></el-icon>
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
-        </el-form-item>
+          </el-form-item>
 
-        <!-- 能力描述 -->
-        <el-form-item label="能力描述">
-          <el-input 
-            v-model="formData.abilities" 
-            type="textarea" 
-            :rows="4" 
-            placeholder="请输入150字以内的能力描述"
-            maxlength="150"
-            show-word-limit
-          ></el-input>
-        </el-form-item>
+          <!-- 能力描述 -->
+          <el-form-item label="能力描述">
+            <el-input 
+              v-model="formData.abilities" 
+              type="textarea" 
+              :rows="4" 
+              placeholder="请输入150字以内的能力描述"
+              maxlength="150"
+              show-word-limit
+            ></el-input>
+          </el-form-item>
 
-        <!-- 欢迎语 -->
-        <el-form-item label="欢迎语" required prop="greeting">
-          <el-input 
-            v-model="formData.greeting" 
-            type="textarea" 
-            :rows="4" 
-            placeholder="请输入100字以内的欢迎语"
-            maxlength="100"
-            show-word-limit
-          ></el-input>
-        </el-form-item>
-      </el-form>
-    </div>
+          <!-- 欢迎语 -->
+          <el-form-item label="欢迎语" required prop="greeting">
+            <el-input 
+              v-model="formData.greeting" 
+              type="textarea" 
+              :rows="4" 
+              placeholder="请输入100字以内的欢迎语"
+              maxlength="100"
+              show-word-limit
+            ></el-input>
+          </el-form-item>
+        </el-form>
+      </div>
 
-    <div class="creation-footer">
-      <el-button type="primary" size="large" @click="saveAssistant">保存创建</el-button>
+      <div class="creation-footer">
+        <el-button type="primary" size="large" @click="saveAssistant">保存创建</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -144,6 +159,7 @@ import { Back, Check, Plus, VideoPlay } from '@element-plus/icons-vue';
 const router = useRouter();
 const formRef = ref();
 const avatarInput = ref();
+const showSuccess = ref(false);
 
 // 表单数据
 const formData = reactive({
@@ -253,8 +269,8 @@ const playVoice = (voice) => {
 const saveAssistant = () => {
   formRef.value.validate((valid) => {
     if (valid) {
-      ElMessage.success('自定义AI助手创建成功！');
-      router.push('/home/AI_writer/AIWriter');
+      // 显示成功页面
+      showSuccess.value = true;
       
       // 实际应用中应该调用API保存数据
       // TODO: API调用逻辑
@@ -263,6 +279,20 @@ const saveAssistant = () => {
       return false;
     }
   });
+};
+
+// 返回自定义AI员工列表
+const goToList = () => {
+  router.push('/home/AI_writer/AIWriter');
+};
+
+// 去知识库训练
+const goToKnowledgeTraining = () => {
+  // 此处可以导航到知识库训练页面
+  // 暂时先返回AI文员页面
+  router.push('/home/AI_writer/AIWriter');
+  // 实际应用中应该导航到知识库训练页面
+  // router.push('/home/AI_writer/knowledge-training');
 };
 </script>
 
@@ -459,5 +489,59 @@ const saveAssistant = () => {
   .el-button {
     width: 200px;
   }
+}
+
+/* 成功页面样式 */
+.success-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #67C23A;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px;
+    box-shadow: 0 0 15px rgba(103, 194, 58, 0.3);
+    
+    .el-icon {
+      color: white;
+      font-size: 40px;
+    }
+  }
+  
+  .success-title {
+    font-size: 22px;
+    color: #303133;
+    margin-bottom: 40px;
+  }
+  
+  .success-actions {
+    display: flex;
+    gap: 20px;
+    
+    .el-button {
+      min-width: 160px;
+    }
+  }
+}
+
+.creation-wrapper {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style> 

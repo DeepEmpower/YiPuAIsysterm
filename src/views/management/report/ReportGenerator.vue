@@ -9,6 +9,10 @@
     </div>
 
     <div class="report-config-section">
+      <div class="section-title">
+        <h3>报表配置</h3>
+      </div>
+      
       <el-form :model="reportConfig" label-width="120px">
         <el-form-item label="报表类型">
           <el-select v-model="reportConfig.type" placeholder="请选择报表类型">
@@ -60,17 +64,52 @@
     
     <!-- 如果报表未生成，显示引导信息 -->
     <div v-else class="report-guide">
-      <el-empty description="请配置并生成报表">
-        <template #image>
-          <el-icon :size="60"><DocumentCopy /></el-icon>
-        </template>
-      </el-empty>
+      <div class="guide-content">
+        <h3>表格配置</h3>
+        
+        <!-- 数据表配置选择器 -->
+        <div class="table-config-selector">
+          <!-- 搜索输入框 -->
+          <div class="search-input">
+            <el-input 
+              v-model="tableSearchInput"
+              placeholder="用户输入: 报表名称、字段、字段的来源(表)、字段的计算逻辑"
+              clearable
+            ></el-input>
+          </div>
+
+          <!-- 推荐选项列表 -->
+          <div class="recommendation-list">
+            <div v-for="(row, rowIndex) in recommendedTables" :key="rowIndex" class="recommendation-row">
+              <div 
+                v-for="(table, tableIndex) in row" 
+                :key="tableIndex"
+                class="recommendation-item"
+                @click="toggleTableSelection(table)"
+              >
+                <el-checkbox v-model="table.selected"></el-checkbox>
+                <span>{{ table.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 自定义和搜索 -->
+          <div class="action-row">
+            <el-input 
+              v-model="customTableName"
+              placeholder="用户输入自定义表名"
+              class="custom-input"
+            ></el-input>
+            <el-button type="primary" @click="searchTables">搜索</el-button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, reactive } from 'vue';
 import { DocumentCopy } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
 
@@ -106,6 +145,57 @@ const currentReportComponent = computed(() => {
     default: return FinancialReport;
   }
 });
+
+// 表格搜索相关变量
+const tableSearchInput = ref('');
+const customTableName = ref('');
+
+// 推荐表格数据 - 二维数组格式，便于布局显示
+const recommendedTables = reactive([
+  [
+    { id: 1, name: 'AI推荐的表名', selected: false },
+    { id: 2, name: '销售数据汇总表', selected: false }
+  ],
+  [
+    { id: 3, name: '客户反馈分析', selected: false },
+    { id: 4, name: '销售业绩同比分析', selected: false }
+  ],
+  [
+    { id: 5, name: '区域销售明细', selected: false },
+    { id: 6, name: '产品销量统计', selected: false }
+  ],
+  [
+    { id: 7, name: '销售人员业绩表', selected: false }
+  ]
+]);
+
+// 切换表格选择状态
+const toggleTableSelection = (table) => {
+  table.selected = !table.selected;
+};
+
+// 搜索表格
+const searchTables = () => {
+  // 获取所有选中的表格
+  const selectedTables = [];
+  recommendedTables.flat().forEach(table => {
+    if (table.selected) {
+      selectedTables.push(table.name);
+    }
+  });
+
+  // 如果有自定义表格名称，也加入列表
+  if (customTableName.value) {
+    selectedTables.push(customTableName.value);
+  }
+
+  // 这里可以处理搜索逻辑，例如更新报表内容或调用API
+  console.log('搜索条件:', tableSearchInput.value);
+  console.log('选中的表格:', selectedTables);
+
+  // 实际应用中可能需要根据选中的表格更新报表内容
+  // updateReportContent(selectedTables);
+};
 
 // 生成报表
 const generateReport = async () => {
@@ -268,6 +358,89 @@ const generateMockData = () => {
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    
+    .guide-content {
+      width: 100%;
+      max-width: 800px;
+      
+      h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #303133;
+      }
+    }
+  }
+
+  /* 表格选择器样式 */
+  .table-config-selector {
+    background-color: #fff;
+    border: 1px solid #e4e7ed;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    
+    .search-input {
+      margin-bottom: 20px;
+    }
+    
+    .recommendation-list {
+      background-color: #f5f7fa;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+      
+      .recommendation-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .recommendation-item {
+          display: flex;
+          align-items: center;
+          background-color: #4d6fc9;
+          color: white;
+          padding: 6px 12px;
+          border-radius: 4px;
+          margin-right: 10px;
+          margin-bottom: 10px;
+          cursor: pointer;
+          
+          .el-checkbox {
+            margin-right: 8px;
+            
+            :deep(.el-checkbox__input) {
+              .el-checkbox__inner {
+                background-color: transparent;
+                border-color: white;
+              }
+            }
+            
+            :deep(.el-checkbox__label) {
+              color: white;
+            }
+          }
+        }
+      }
+    }
+    
+    .action-row {
+      display: flex;
+      gap: 15px;
+      
+      .custom-input {
+        flex: 1;
+      }
+      
+      .el-button {
+        width: 120px;
+      }
+    }
   }
 }
 </style> 
