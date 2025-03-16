@@ -1,6 +1,6 @@
 <template>
-  <div class="report-generator-container">
-    <div class="report-header">
+  <div class="report-generator-container fixed-height">
+    <div class="report-header glass-panel">
       <h2>企业报表生成</h2>
       <div class="header-actions">
         <el-button type="primary" @click="generateReport">生成报表</el-button>
@@ -10,7 +10,7 @@
 
     <div class="report-config-section">
       <div class="section-title">
-        <h3>报表配置</h3>
+        <h3><el-icon><Document /></el-icon> 报表配置</h3>
       </div>
       
       <el-form :model="reportConfig" label-width="120px">
@@ -65,43 +65,86 @@
     <!-- 如果报表未生成，显示引导信息 -->
     <div v-else class="report-guide">
       <div class="guide-content">
-        <h3>表格配置</h3>
+        <h3><el-icon><DataAnalysis /></el-icon> 表格配置</h3>
         
         <!-- 数据表配置选择器 -->
         <div class="table-config-selector">
           <!-- 搜索输入框 -->
           <div class="search-input">
+            <div class="input-label">
+              <el-icon><ChatLineRound /></el-icon> AI推荐报表
+            </div>
             <el-input 
               v-model="tableSearchInput"
-              placeholder="用户输入: 报表名称、字段、字段的来源(表)、字段的计算逻辑"
+              placeholder="输入关键词，AI将为您推荐相关报表"
+              @keyup.enter="handleInputSearch"
+              prefix-icon="Search"
               clearable
             ></el-input>
           </div>
 
-          <!-- 推荐选项列表 -->
-          <div class="recommendation-list">
-            <div v-for="(row, rowIndex) in recommendedTables" :key="rowIndex" class="recommendation-row">
-              <div 
-                v-for="(table, tableIndex) in row" 
-                :key="tableIndex"
-                class="recommendation-item"
-                @click="toggleTableSelection(table)"
-              >
-                <el-checkbox v-model="table.selected"></el-checkbox>
-                <span>{{ table.name }}</span>
+          <!-- 两栏布局: AI推荐和自定义表格 -->
+          <div class="tables-container">
+            <!-- 左侧: AI推荐表格 -->
+            <div class="table-column ai-recommendations glass-panel">
+              <div class="column-title">
+                <el-icon><ChatLineRound /></el-icon> AI推荐的报表
+              </div>
+              <div class="table-items">
+                <div 
+                  v-for="(table, index) in aiRecommendedTables" 
+                  :key="index"
+                  class="table-item"
+                  @click="toggleTableSelection(table)"
+                >
+                  <el-checkbox v-model="table.selected"></el-checkbox>
+                  <span>{{ table.name }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 右侧: 用户自定义表格 -->
+            <div class="table-column custom-tables glass-panel">
+              <div class="column-title">
+                <el-icon><User /></el-icon> 用户自定义表格
+              </div>
+              <div class="table-items">
+                <div 
+                  v-for="(table, index) in customTables" 
+                  :key="index"
+                  class="table-item"
+                  @click="toggleTableSelection(table)"
+                >
+                  <el-checkbox v-model="table.selected"></el-checkbox>
+                  <span>{{ table.name }}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- 自定义和搜索 -->
           <div class="action-row">
+            <div class="input-label smaller">
+              <el-icon><Plus /></el-icon> 查找自定义表格
+            </div>
             <el-input 
               v-model="customTableName"
-              placeholder="用户输入自定义表名"
+              placeholder="输入表名关键词进行查找"
               class="custom-input"
+              @keyup.enter="searchTableByName"
+              prefix-icon="Search"
             ></el-input>
-            <el-button type="primary" @click="searchTables">搜索</el-button>
+            <el-button type="primary" @click="searchTableByName">查找</el-button>
           </div>
+        </div>
+
+        <!-- 搜索结果提示 -->
+        <div 
+          class="search-result-tip" 
+          :class="searchResultMessageType"
+          v-if="searchResultMessage"
+        >
+          {{ searchResultMessage }}
         </div>
       </div>
     </div>
@@ -110,7 +153,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue';
-import { DocumentCopy } from '@element-plus/icons-vue';
+import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
 
 // 修正引入路径
@@ -149,24 +192,40 @@ const currentReportComponent = computed(() => {
 // 表格搜索相关变量
 const tableSearchInput = ref('');
 const customTableName = ref('');
+const searchResultMessage = ref('');
 
-// 推荐表格数据 - 二维数组格式，便于布局显示
-const recommendedTables = reactive([
-  [
-    { id: 1, name: 'AI推荐的表名', selected: false },
-    { id: 2, name: '销售数据汇总表', selected: false }
-  ],
-  [
-    { id: 3, name: '客户反馈分析', selected: false },
-    { id: 4, name: '销售业绩同比分析', selected: false }
-  ],
-  [
-    { id: 5, name: '区域销售明细', selected: false },
-    { id: 6, name: '产品销量统计', selected: false }
-  ],
-  [
-    { id: 7, name: '销售人员业绩表', selected: false }
-  ]
+// 计算消息类型
+const searchResultMessageType = computed(() => {
+  if (!searchResultMessage.value) return '';
+  return searchResultMessage.value.includes('未找到') ? 'warning-message' : 'success-message';
+});
+
+// AI推荐的表格
+const aiRecommendedTables = reactive([
+  { id: 1, name: 'AI推荐的表名', selected: false },
+  { id: 2, name: '销售数据汇总表', selected: false },
+  { id: 3, name: '客户反馈分析', selected: false },
+  { id: 4, name: '销售业绩同比分析', selected: false },
+  { id: 5, name: '季度销售业绩', selected: false },
+  { id: 6, name: '区域销售情况', selected: false },
+  { id: 7, name: '产品销量排名', selected: false },
+  { id: 8, name: '销售人员业绩', selected: false },
+  { id: 9, name: '退货率分析', selected: false },
+  { id: 10, name: '客户投诉统计', selected: false },
+  { id: 11, name: '销售渠道分析', selected: false },
+  { id: 12, name: '产品类别统计', selected: false }
+]);
+
+// 用户自定义的表格
+const customTables = reactive([
+  { id: 101, name: '自定义报表1', selected: false },
+  { id: 102, name: '产品库存状态', selected: false },
+  { id: 103, name: '员工绩效考核', selected: false },
+  { id: 104, name: '市场营销活动', selected: false },
+  { id: 105, name: '渠道分销情况', selected: false },
+  { id: 106, name: '价格敏感度分析', selected: false },
+  { id: 107, name: '供应商评估', selected: false },
+  { id: 108, name: '客户满意度调查', selected: false }
 ]);
 
 // 切换表格选择状态
@@ -174,27 +233,99 @@ const toggleTableSelection = (table) => {
   table.selected = !table.selected;
 };
 
-// 搜索表格
-const searchTables = () => {
-  // 获取所有选中的表格
+// 处理AI推荐报表
+const handleInputSearch = () => {
+  // 清除搜索结果消息
+  searchResultMessage.value = '';
+  
+  // 调用AI API获取推荐报表
+  // 目前仅做UI展示，添加模拟数据
+  if (tableSearchInput.value) {
+    // 模拟搜索结果
+    const searchText = tableSearchInput.value.trim();
+    if (searchText) {
+      // 清除之前的推荐
+      aiRecommendedTables.splice(0, aiRecommendedTables.length);
+      
+      // 添加模拟推荐结果
+      aiRecommendedTables.push(
+        { id: Date.now(), name: `${searchText}汇总表`, selected: false },
+        { id: Date.now() + 1, name: `${searchText}分析报表`, selected: false },
+        { id: Date.now() + 2, name: `${searchText}趋势图`, selected: false }
+      );
+      
+      // 生成推荐后清空输入框
+      tableSearchInput.value = '';
+    }
+  }
+};
+
+// 根据表名搜索表格
+const searchTableByName = () => {
+  // 清除搜索结果消息
+  searchResultMessage.value = '';
+  
+  if (customTableName.value) {
+    const tableName = customTableName.value.trim();
+    if (tableName) {
+      // 模拟查找自定义表格的过程
+      const loading = ElLoading.service({
+        lock: true,
+        text: '正在查找相关表格...',
+        background: 'rgba(255, 255, 255, 0.7)'
+      });
+      
+      // 模拟网络延迟
+      setTimeout(() => {
+        loading.close();
+        
+        // 随机决定是否找到表格（实际应用中会根据API结果决定）
+        const foundRelatedTables = Math.random() > 0.3; // 70%概率找到相关表格
+        
+        if (foundRelatedTables) {
+          // 模拟找到的相关表格
+          const searchResults = [
+            { id: Date.now(), name: tableName, selected: false },
+            { id: Date.now() + 1, name: `${tableName}_明细`, selected: false }
+          ];
+          
+          // 添加到自定义表格列表
+          searchResults.forEach(table => {
+            customTables.push(table);
+          });
+          
+          searchResultMessage.value = `已找到 ${searchResults.length} 个相关自定义表格`;
+        } else {
+          // 没有找到相关表格
+          searchResultMessage.value = `未找到与"${tableName}"相关的自定义表格，请尝试其他关键词`;
+        }
+        
+        // 清空输入框
+        customTableName.value = '';
+      }, 1000);
+    }
+  }
+};
+
+// 获取所有选中的表格
+const getSelectedTables = () => {
   const selectedTables = [];
-  recommendedTables.flat().forEach(table => {
+  
+  // 获取AI推荐中选中的表格
+  aiRecommendedTables.forEach(table => {
     if (table.selected) {
-      selectedTables.push(table.name);
+      selectedTables.push(table);
     }
   });
-
-  // 如果有自定义表格名称，也加入列表
-  if (customTableName.value) {
-    selectedTables.push(customTableName.value);
-  }
-
-  // 这里可以处理搜索逻辑，例如更新报表内容或调用API
-  console.log('搜索条件:', tableSearchInput.value);
-  console.log('选中的表格:', selectedTables);
-
-  // 实际应用中可能需要根据选中的表格更新报表内容
-  // updateReportContent(selectedTables);
+  
+  // 获取自定义中选中的表格
+  customTables.forEach(table => {
+    if (table.selected) {
+      selectedTables.push(table);
+    }
+  });
+  
+  return selectedTables;
 };
 
 // 生成报表
@@ -298,23 +429,37 @@ const generateMockData = () => {
 </script>
 
 <style scoped lang="scss">
+/* 添加过渡动画 */
+.table-item,
+.el-button,
+.glass-panel {
+  transition: all 0.2s ease;
+}
+
 .report-generator-container {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  padding: 16px;
   background-color: #f5f7fa;
+  
+  /* 玻璃面板效果 */
+  .glass-panel {
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+  }
   
   .report-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
     
     h2 {
       margin: 0;
       font-size: 22px;
-      color: #333;
+      color: #4d6fc9;
     }
     
     .header-actions {
@@ -329,6 +474,19 @@ const generateMockData = () => {
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    max-height: 235px;
+    overflow-y: auto;
+    
+    .section-title h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #4d6fc9;
+      
+      .el-icon {
+        font-size: 20px;
+      }
+    }
   }
   
   .report-preview-section {
@@ -352,77 +510,152 @@ const generateMockData = () => {
   
   .report-guide {
     flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 16px;
+    overflow-y: hidden;
     
     .guide-content {
       width: 100%;
-      max-width: 800px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
       
       h3 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        color: #303133;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 20px 0;
+        color: #4d6fc9;
+        font-size: 18px;
+        
+        .el-icon {
+          font-size: 20px;
+        }
       }
     }
   }
 
   /* 表格选择器样式 */
   .table-config-selector {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: #fff;
-    border: 1px solid #e4e7ed;
     border-radius: 4px;
-    padding: 20px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    padding: 16px;
+    margin-bottom: 10px;
+    overflow: hidden;
     
-    .search-input {
-      margin-bottom: 20px;
+    .input-label {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #606266;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      
+      &.smaller {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
     }
     
-    .recommendation-list {
-      background-color: #f5f7fa;
-      border-radius: 4px;
-      padding: 15px;
-      margin-bottom: 20px;
+    .search-input {
+      margin-bottom: 12px;
+    }
+    
+    .tables-container {
+      flex: 1;
+      display: flex;
+      gap: 20px;
+      margin-bottom: 12px;
+      min-height: 0; /* 关键设置：允许flex子项在需要时收缩 */
       
-      .recommendation-row {
+      .table-column {
+        flex: 1;
+        border-radius: 4px;
+        padding: 12px;
         display: flex;
-        flex-wrap: wrap;
-        margin-bottom: 10px;
+        flex-direction: column;
         
-        &:last-child {
-          margin-bottom: 0;
-        }
-        
-        .recommendation-item {
+        .column-title {
           display: flex;
           align-items: center;
-          background-color: #4d6fc9;
-          color: white;
-          padding: 6px 12px;
-          border-radius: 4px;
-          margin-right: 10px;
-          margin-bottom: 10px;
-          cursor: pointer;
+          gap: 6px;
+          font-weight: bold;
+          margin-bottom: 15px;
+          color: #333;
+          font-size: 14px;
           
-          .el-checkbox {
-            margin-right: 8px;
+          .el-icon {
+            color: #4d6fc9;
+          }
+        }
+        
+        .table-items {
+          flex: 1; /* 填充剩余空间 */
+          min-height: 0; /* 允许在需要时收缩 */
+          overflow-y: auto;
+          padding-right: 5px; /* 为滚动条留出空间 */
+          /* 美化滚动条 */
+          &::-webkit-scrollbar {
+            width: 6px;
+          }
+          
+          &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+          }
+          
+          &::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+          }
+          
+          .table-item {
+            display: flex;
+            align-items: center;
+            background-color: #4d6fc9;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
             
-            :deep(.el-checkbox__input) {
-              .el-checkbox__inner {
-                background-color: transparent;
-                border-color: white;
-              }
+            &:hover {
+              background-color: #5e7dd6;
+              transform: translateY(-2px);
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             }
             
-            :deep(.el-checkbox__label) {
-              color: white;
+            .el-checkbox {
+              margin-right: 8px;
+              
+              :deep(.el-checkbox__input) {
+                .el-checkbox__inner {
+                  background-color: transparent;
+                  border-color: white;
+                }
+                
+                &.is-checked {
+                  .el-checkbox__inner {
+                    background-color: white;
+                    border-color: white;
+                    
+                    &::after {
+                      border-color: #4d6fc9;
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -439,8 +672,41 @@ const generateMockData = () => {
       
       .el-button {
         width: 120px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
       }
     }
   }
+
+  .search-result-tip {
+    margin-top: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    flex-shrink: 0; /* 防止消息挤压表格空间 */
+  }
+
+  /* 添加不同类型消息的样式 */
+  .success-message {
+    background-color: #f0f9eb;
+    color: #67c23a;
+  }
+  
+  .warning-message {
+    background-color: #fdf6ec;
+    color: #e6a23c;
+  }
+}
+
+/* 固定高度布局 */
+.fixed-height {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 </style> 
