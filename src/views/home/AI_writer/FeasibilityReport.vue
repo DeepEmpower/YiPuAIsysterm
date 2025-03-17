@@ -144,29 +144,24 @@
         <div class="preview-section">
           <div class="section-title">
             <h3>报告预览</h3>
-            <div class="preview-actions" v-if="reportContent">
-              <el-button type="text" @click="copyReportContent">
-                <el-icon><DocumentCopy /></el-icon> 复制内容
-              </el-button>
+            <div class="preview-actions" v-if="isGenerating">
+              <el-button type="danger" size="small" @click="stopGenerating">停止生成</el-button>
             </div>
           </div>
           
-          <div class="preview-content" v-if="reportContent">
-            <div class="report-title">{{ reportConfig.projectName || '项目' }}可行性研究报告</div>
-            <div class="report-meta">生成时间: {{ currentDateTime }}</div>
+          <div class="preview-wrapper" ref="previewRef">
+            <el-empty description="报告预览区域" v-if="!reportContent && !isGenerating" />
             
-            <div class="report-body" v-html="reportContent"></div>
-          </div>
-          
-          <div class="empty-preview" v-else>
-            <el-empty description="请配置并生成报告">
-              <template #image>
-                <img src="@/assets/images/report-placeholder.png" alt="空报告" style="height: 180px;">
-              </template>
-              <template #description>
-                <p>完成左侧配置后，点击"生成报告"按钮</p>
-              </template>
-            </el-empty>
+            <div v-if="isGenerating && !reportContent" class="generating-indicator">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              <span>正在生成报告，请稍候...</span>
+            </div>
+            
+            <div v-if="reportContent" class="preview-content">
+              <div class="report-title">{{ reportConfig.projectName || '项目名称' }}可行性研究报告</div>
+              <div class="report-meta">生成日期: {{ new Date().toLocaleDateString() }}</div>
+              <div class="report-body" v-html="formatContent(reportContent)"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -175,10 +170,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, Back, Loading } from '@element-plus/icons-vue';
+import { useFeasibilityReport } from '@/api/feasibility';
 
 const router = useRouter();
 
@@ -187,16 +183,20 @@ const reportConfig = ref({
   projectName: '',
   projectType: 'product',
   background: '',
-  sections: ['executive_summary', 'market_analysis', 'financial_analysis', 'conclusion'],
+  sections: ['executive_summary', 'market_analysis', 'technical_analysis', 'financial_analysis'],
   depth: 'standard',
   budget: [100, 500],
   additionalInfo: ''
 });
 
+// 使用可行性报告API
+const { state: reportState, generateReport: apiGenerateReport, stopGeneration } = useFeasibilityReport();
+
 // 报告内容
-const reportContent = ref('');
-const selectedHistoryIndex = ref(-1);
-const historyReports = ref([]);
+const reportContent = computed(() => reportState.value.content);
+
+// 是否正在生成报告
+const isGenerating = computed(() => reportState.value.isGenerating);
 
 // 当前日期时间
 const currentDateTime = computed(() => {
@@ -212,217 +212,144 @@ const currentDateTime = computed(() => {
 
 // 是否可以生成报告
 const canGenerate = computed(() => {
-  return reportConfig.value.projectName && reportConfig.value.background;
+  return reportConfig.value.projectName.trim() !== '' && 
+         reportConfig.value.background.trim() !== '' &&
+        !isGenerating.value;
 });
 
 // 返回上一页
 const goBack = () => {
-  router.back();
+  router.push('/home/AI_writer');
 };
 
 // 生成报告
-const generateReport = () => {
+const generateReport = async () => {
+  if (reportContent.value && !isGenerating.value) {
+    // 如果已有报告内容，询问是否重新生成
+    try {
+      await ElMessageBox.confirm('重新生成将覆盖当前报告内容，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    } catch {
+      return; // 用户取消操作
+    }
+  }
+  
+  // 检查必填字段
   if (!canGenerate.value) {
-    ElMessage.warning('请至少填写项目名称和项目背景');
+    ElMessage.warning('请填写项目名称和项目背景');
     return;
   }
   
-  const loading = ElLoading.service({
-    lock: true,
-    text: '正在生成报告...',
-    background: 'rgba(0, 0, 0, 0.7)'
-  });
+  // 调用API生成报告
+  apiGenerateReport(reportConfig.value);
   
-  // 模拟生成报告的API调用
-  setTimeout(() => {
-    reportContent.value = generateMockReport();
-    loading.close();
-    ElMessage.success('报告生成成功！');
-    
-    // 将生成的报告添加到历史记录
-    saveReportToHistory();
-  }, 2000);
+  // 滚动到预览区域
+  nextTick(() => {
+    scrollToPreview();
+  });
 };
 
-// 模拟生成报告内容
-const generateMockReport = () => {
-  // 这里可以根据reportConfig的配置生成对应的报告内容
-  // 这里只是示例内容
-  return `
-    <h2>执行摘要</h2>
-    <p>本报告旨在评估"${reportConfig.value.projectName}"项目的可行性。通过对市场、技术、财务和风险等方面的分析，
-    我们认为该项目具有良好的投资价值和市场前景。预计该项目的投资回报率约为15%，回收期约为3年。</p>
-    
-    ${reportConfig.value.sections.includes('market_analysis') ? `
-    <h2>市场分析</h2>
-    <p>当前市场规模约为${Math.round(Math.random() * 1000)}亿元，年增长率约为${Math.round(Math.random() * 20)}%。
-    主要竞争对手包括A公司、B公司和C公司，市场集中度约为${Math.round(Math.random() * 60 + 30)}%。</p>
-    <p>目标用户群体主要分布在一线和二线城市，年龄段为25-45岁，有较强的消费能力和消费意愿。</p>
-    <p>通过SWOT分析，该项目的优势在于技术创新和成本控制，劣势在于品牌知名度不足，机会在于市场需求增长，
-    威胁在于竞争对手的快速跟进和政策变动。</p>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('technical_analysis') ? `
-    <h2>技术可行性分析</h2>
-    <p>本项目采用的核心技术已经过验证，技术成熟度高，实现难度适中。项目开发周期预计为${Math.round(Math.random() * 6 + 6)}个月，
-    需要的技术团队规模约为${Math.round(Math.random() * 10 + 5)}人。</p>
-    <p>关键技术风险点包括：系统稳定性、数据安全性和扩展性。针对这些风险点，我们已制定相应的应对策略。</p>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('financial_analysis') ? `
-    <h2>财务分析</h2>
-    <p>项目总投资预计在${reportConfig.value.budget[0]}-${reportConfig.value.budget[1]}万元之间，
-    其中固定资产投资约占${Math.round(Math.random() * 30 + 20)}%，研发投入约占${Math.round(Math.random() * 30 + 20)}%，
-    营销和运营成本约占${Math.round(Math.random() * 30 + 20)}%。</p>
-    <p>财务测算显示，项目静态投资回收期约为${Math.round(Math.random() * 2 + 2)}年，动态投资回收期约为
-    ${Math.round(Math.random() * 2 + 3)}年，内部收益率约为${Math.round(Math.random() * 10 + 10)}%。</p>
-    <table>
-      <tr>
-        <th>年度</th>
-        <th>收入(万元)</th>
-        <th>成本(万元)</th>
-        <th>利润(万元)</th>
-      </tr>
-      <tr>
-        <td>第一年</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.4)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.6)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.4 - reportConfig.value.budget[1] * 0.6)}</td>
-      </tr>
-      <tr>
-        <td>第二年</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.8)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.5)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.8 - reportConfig.value.budget[1] * 0.5)}</td>
-      </tr>
-      <tr>
-        <td>第三年</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 1.2)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 0.5)}</td>
-        <td>${Math.round(reportConfig.value.budget[1] * 1.2 - reportConfig.value.budget[1] * 0.5)}</td>
-      </tr>
-    </table>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('risk_analysis') ? `
-    <h2>风险分析</h2>
-    <p>项目主要风险包括：市场风险、技术风险、财务风险和政策风险。</p>
-    <ul>
-      <li><strong>市场风险</strong>：竞争加剧导致市场份额下降</li>
-      <li><strong>技术风险</strong>：核心技术实现难度高于预期</li>
-      <li><strong>财务风险</strong>：投资回报低于预期</li>
-      <li><strong>政策风险</strong>：行业政策变动影响项目实施</li>
-    </ul>
-    <p>针对上述风险，已制定详细的风险防范和应对措施。</p>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('implementation_plan') ? `
-    <h2>实施计划</h2>
-    <p>项目实施分为前期准备、开发实施、测试验收和市场推广四个阶段，总周期约为${Math.round(Math.random() * 6 + 6)}个月。</p>
-    <p>关键里程碑：</p>
-    <ul>
-      <li>项目立项和团队组建：1个月</li>
-      <li>核心功能开发：3个月</li>
-      <li>系统测试和优化：2个月</li>
-      <li>市场推广和运营：持续进行</li>
-    </ul>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('conclusion') ? `
-    <h2>结论与建议</h2>
-    <p>综合考虑市场、技术、财务和风险等方面，本项目具有较高的可行性和较好的投资价值。</p>
-    <p>我们建议：</p>
-    <ol>
-      <li>推进项目实施，优先确保核心技术的研发和应用</li>
-      <li>密切关注市场动态，及时调整产品定位和营销策略</li>
-      <li>分阶段投入，根据市场反馈调整后续投资计划</li>
-      <li>加强风险管控，特别是技术风险和市场风险</li>
-    </ol>
-    ` : ''}
-    
-    ${reportConfig.value.additionalInfo ? `
-    <h2>补充信息</h2>
-    <p>${reportConfig.value.additionalInfo}</p>
-    ` : ''}
-    
-    ${reportConfig.value.sections.includes('appendix') ? `
-    <h2>附录</h2>
-    <p>附录A：市场调研数据</p>
-    <p>附录B：技术规范文档</p>
-    <p>附录C：财务测算详情</p>
-    ` : ''}
-  `;
+// 停止生成报告
+const stopGenerating = () => {
+  stopGeneration();
+  ElMessage.info('已停止生成报告');
 };
 
-// 保存报告到历史记录
-const saveReportToHistory = () => {
-  const newReport = {
-    id: Date.now().toString(),
-    title: `${reportConfig.value.projectName}可行性研究报告`,
-    date: currentDateTime.value,
-    config: JSON.parse(JSON.stringify(reportConfig.value)),
-    content: reportContent.value
+// 保存草稿
+const saveAsDraft = () => {
+  if (!reportContent.value) {
+    ElMessage.warning('没有内容可保存');
+    return;
+  }
+  
+  // 模拟草稿保存
+  const draft = {
+    title: reportConfig.value.projectName,
+    content: reportContent.value,
+    date: new Date().toLocaleDateString()
   };
   
-  historyReports.value.unshift(newReport);
-  saveHistoryReportsToStorage();
-  selectedHistoryIndex.value = 0;
+  // 将草稿放到历史记录中
+  historyReports.value.unshift(draft);
+  ElMessage.success('草稿已保存');
 };
 
-// 保存报告到本地存储
-const saveHistoryReportsToStorage = () => {
-  localStorage.setItem('feasibilityReports', JSON.stringify(historyReports.value));
-};
-
-// 从本地存储加载历史报告
-const loadHistoryReports = () => {
-  const saved = localStorage.getItem('feasibilityReports');
-  if (saved) {
-    try {
-      historyReports.value = JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to parse history reports from storage', e);
-      historyReports.value = [];
-    }
+// 导出报告
+const exportReport = () => {
+  if (!reportContent.value) {
+    ElMessage.warning('没有内容可导出');
+    return;
   }
+  
+  // 创建格式化的报告文本
+  const reportTitle = `${reportConfig.value.projectName}可行性研究报告`;
+  const today = new Date().toLocaleDateString();
+  
+  const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
+  
+  // 创建下载链接
+  const blob = new Blob([fullReport], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${reportTitle}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  ElMessage.success('报告已导出');
+};
+
+// 历史报告
+const historyReports = ref([
+  { title: '示例报告-电商平台升级', date: '2023-12-15' },
+  { title: '示例报告-新产品开发计划', date: '2023-12-10' }
+]);
+
+// 选中的历史报告索引
+const selectedHistoryIndex = ref(-1);
+
+// 加载历史报告
+const loadHistoryReports = () => {
+  // 模拟加载历史报告
+  ElMessage.success('历史报告已刷新');
 };
 
 // 选择历史报告
 const selectHistoryReport = (index) => {
   selectedHistoryIndex.value = index;
-  const report = historyReports.value[index];
-  
-  reportConfig.value = { ...report.config };
-  reportContent.value = report.content;
+  // 模拟加载报告内容
+  reportState.value.content = '这是从服务器加载的历史报告内容示例。实际实现中，这里会加载真实的历史报告内容。';
 };
 
 // 删除历史报告
 const deleteHistoryReport = (index) => {
-  ElMessageBox.confirm(
-    '确定要删除这个历史报告吗？',
-    '删除确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    historyReports.value.splice(index, 1);
-    saveHistoryReportsToStorage();
-    
+  ElMessageBox.confirm('确定要删除这份历史报告吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    historyReports.value.splice(index, selectedHistoryIndex.value === index ? 1 : 1);
     if (selectedHistoryIndex.value === index) {
-      // 如果删除的是当前选中的，则清空选中状态
       selectedHistoryIndex.value = -1;
-      reportContent.value = '';
-    } else if (selectedHistoryIndex.value > index) {
-      // 如果删除的是当前选中之前的，则索引减1
-      selectedHistoryIndex.value--;
+      reportState.value.content = '';
     }
-    
-    ElMessage.success('历史报告已删除');
-  }).catch(() => {
-    // 用户取消删除
-  });
+    ElMessage.success('删除成功');
+  }).catch(() => {});
+};
+
+// 预览区域DOM引用
+const previewRef = ref(null);
+
+// 滚动到预览区域
+const scrollToPreview = () => {
+  if (previewRef.value) {
+    previewRef.value.scrollIntoView({ behavior: 'smooth' });
+  }
 };
 
 // 复制报告内容
@@ -440,58 +367,31 @@ const copyReportContent = () => {
   });
 };
 
-// 保存为草稿
-const saveAsDraft = () => {
-  const draftData = {
-    config: reportConfig.value,
-    content: reportContent.value,
-    timestamp: Date.now()
-  };
+// 格式化报告内容 - 简单的Markdown格式转HTML
+const formatContent = (content: string) => {
+  if (!content) return '';
   
-  localStorage.setItem('feasibilityReportDraft', JSON.stringify(draftData));
-  ElMessage.success('草稿保存成功');
-};
-
-// 导出报告
-const exportReport = () => {
-  ElMessage.success('报告已导出');
-  // 实际项目中可以实现为导出PDF或Word文档
-};
-
-// 加载草稿
-const loadDraft = () => {
-  const draftData = localStorage.getItem('feasibilityReportDraft');
-  if (draftData) {
-    try {
-      const draft = JSON.parse(draftData);
-      // 确认是否加载草稿
-      ElMessageBox.confirm(
-        '检测到未完成的草稿，是否加载？',
-        '加载草稿',
-        {
-          confirmButtonText: '加载',
-          cancelButtonText: '不加载',
-          type: 'info',
-        }
-      ).then(() => {
-        reportConfig.value = draft.config;
-        if (draft.content) {
-          reportContent.value = draft.content;
-        }
-        ElMessage.success('草稿加载成功');
-      }).catch(() => {
-        // 用户选择不加载草稿
-      });
-    } catch (e) {
-      console.error('Failed to parse draft data', e);
-    }
+  // 替换标题 (## 标题)
+  let formatted = content.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  
+  // 替换段落，添加间距
+  formatted = formatted.replace(/\n\n/g, '</p><p>');
+  
+  // 替换列表项 (- 列表项)
+  formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
+  formatted = formatted.replace(/<li>/g, '<ul><li>').replace(/<\/li>\n/g, '</li></ul>');
+  
+  // 包装在段落标签中
+  if (!formatted.startsWith('<h2>') && !formatted.startsWith('<ul>')) {
+    formatted = '<p>' + formatted + '</p>';
   }
-};
+  
+  return formatted;
+}
 
 // 组件挂载时执行
 onMounted(() => {
   loadHistoryReports();
-  loadDraft();
 });
 </script>
 
@@ -718,6 +618,35 @@ onMounted(() => {
     margin-bottom: 10px;
     display: flex;
     gap: 20px;
+  }
+  
+  .generating-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    
+    .el-icon {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #409EFF;
+    }
+    
+    span {
+      color: #606266;
+    }
+  }
+  
+  .preview-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .preview-wrapper {
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
   }
 }
 </style> 
