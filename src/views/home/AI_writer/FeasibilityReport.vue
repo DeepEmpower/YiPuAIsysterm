@@ -173,8 +173,9 @@
 import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back, Loading } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, Back, Loading, Download } from '@element-plus/icons-vue';
 import { useFeasibilityReport } from '@/api/feasibility';
+import { exportToWord } from '@/api/docExport';
 
 const router = useRouter();
 
@@ -284,24 +285,45 @@ const exportReport = () => {
     return;
   }
   
-  // 创建格式化的报告文本
+  // 创建格式化的报告标题
   const reportTitle = `${reportConfig.value.projectName}可行性研究报告`;
-  const today = new Date().toLocaleDateString();
   
-  const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
-  
-  // 创建下载链接
-  const blob = new Blob([fullReport], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${reportTitle}.md`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  ElMessage.success('报告已导出');
+  // 显示导出选项
+  ElMessageBox.confirm(
+    '请选择导出格式',
+    '导出报告',
+    {
+      confirmButtonText: 'Word文档',
+      cancelButtonText: 'Markdown',
+      distinguishCancelAndClose: true,
+      type: 'info'
+    }
+  )
+  .then(() => {
+    // 导出Word文档
+    exportToWord(reportTitle, reportContent.value, reportTitle);
+    ElMessage.success('报告已导出为Word文档');
+  })
+  .catch((action) => {
+    if (action === 'cancel') {
+      // 导出Markdown
+      const today = new Date().toLocaleDateString();
+      const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
+      
+      // 创建下载链接
+      const blob = new Blob([fullReport], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reportTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      ElMessage.success('报告已导出为Markdown文件');
+    }
+  });
 };
 
 // 历史报告
