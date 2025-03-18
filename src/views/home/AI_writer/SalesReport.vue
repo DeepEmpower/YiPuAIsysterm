@@ -28,66 +28,70 @@
           </div>
           
           <el-form :model="reportConfig" label-position="top">
-            <el-form-item label="报告标题">
-              <el-input v-model="reportConfig.title" placeholder="请输入报告标题"></el-input>
+            <el-form-item label="产品名称">
+              <el-input v-model="reportConfig.productName" placeholder="请输入产品名称"></el-input>
             </el-form-item>
             
-            <el-form-item label="报告类型">
-              <el-select v-model="reportConfig.reportType" placeholder="请选择报告类型" style="width: 100%;">
-                <el-option label="月度销售报告" value="monthly"></el-option>
-                <el-option label="季度销售报告" value="quarterly"></el-option>
-                <el-option label="年度销售报告" value="yearly"></el-option>
-                <el-option label="产品销售分析" value="product"></el-option>
-                <el-option label="区域销售分析" value="regional"></el-option>
-                <el-option label="客户销售分析" value="customer"></el-option>
+            <el-form-item label="产品类型">
+              <el-select v-model="reportConfig.productType" placeholder="请选择产品类型" style="width: 100%;">
+                <el-option label="消费品" value="consumer"></el-option>
+                <el-option label="工业品" value="industrial"></el-option>
+                <el-option label="服务" value="service"></el-option>
+                <el-option label="软件" value="software"></el-option>
+                <el-option label="其他" value="other"></el-option>
               </el-select>
             </el-form-item>
             
-            <el-form-item label="销售概况">
+            <el-form-item label="产品定位">
               <el-input 
                 type="textarea" 
-                v-model="reportConfig.overview" 
-                placeholder="请简述销售业绩和主要亮点"
+                v-model="reportConfig.marketPosition" 
+                placeholder="请描述产品定位"
                 :autosize="{ minRows: 3, maxRows: 6 }"
               ></el-input>
             </el-form-item>
             
-            <el-form-item label="报告内容选项">
+            <el-form-item label="目标市场">
+              <el-input 
+                type="textarea" 
+                v-model="reportConfig.targetMarket" 
+                placeholder="请描述目标市场"
+                :autosize="{ minRows: 3, maxRows: 6 }"
+              ></el-input>
+            </el-form-item>
+            
+            <el-form-item label="报告章节">
               <el-checkbox-group v-model="reportConfig.sections">
                 <div class="checkbox-row">
-                  <el-checkbox label="executive_summary">摘要概述</el-checkbox>
-                  <el-checkbox label="performance_overview">业绩概览</el-checkbox>
+                  <el-checkbox label="strategic_positioning">战略破局点定位</el-checkbox>
+                  <el-checkbox label="channel_defense">立体渠道攻防</el-checkbox>
+                  <el-checkbox label="digital_sales">数字销售引擎</el-checkbox>
                 </div>
                 <div class="checkbox-row">
-                  <el-checkbox label="product_sales">产品销售</el-checkbox>
-                  <el-checkbox label="regional_analysis">区域分析</el-checkbox>
-                </div>
-                <div class="checkbox-row">
-                  <el-checkbox label="customer_insights">客户洞察</el-checkbox>
-                  <el-checkbox label="competitive_analysis">竞争分析</el-checkbox>
-                </div>
-                <div class="checkbox-row">
-                  <el-checkbox label="forecast_outlook">预测展望</el-checkbox>
-                  <el-checkbox label="action_plan">行动计划</el-checkbox>
+                  <el-checkbox label="resource_model">资源投放模型</el-checkbox>
+                  <el-checkbox label="risk_defense">风险防御工事</el-checkbox>
+                  <el-checkbox label="result_validation">战果验证体系</el-checkbox>
                 </div>
               </el-checkbox-group>
             </el-form-item>
             
-            <el-form-item label="报告深度">
-              <el-radio-group v-model="reportConfig.depth">
-                <el-radio-button label="brief">简要</el-radio-button>
-                <el-radio-button label="standard">标准</el-radio-button>
-                <el-radio-button label="detailed">详细</el-radio-button>
-              </el-radio-group>
+            <el-form-item label="销售周期">
+              <el-select v-model="reportConfig.salesPeriod" placeholder="请选择销售周期" style="width: 100%;">
+                <el-option label="月度" value="monthly"></el-option>
+                <el-option label="季度" value="quarterly"></el-option>
+                <el-option label="年度" value="yearly"></el-option>
+                <el-option label="自定义" value="custom"></el-option>
+              </el-select>
             </el-form-item>
             
-            <el-form-item label="销售目标达成率">
-              <el-slider 
-                v-model="reportConfig.targetAchievement" 
+            <el-form-item label="销售目标（万元）">
+              <el-input-number 
+                v-model="reportConfig.salesTarget" 
                 :min="0" 
-                :max="200"
-                :marks="{0: '0%', 50: '50%', 100: '100%', 150: '150%', 200: '200%'}"
-              ></el-slider>
+                :max="10000" 
+                :step="100"
+                style="width: 100%;"
+              ></el-input-number>
             </el-form-item>
             
             <el-form-item label="补充信息">
@@ -101,7 +105,7 @@
           </el-form>
         </div>
         
-        <!-- 历史报告区移到左侧栏底部 -->
+        <!-- 历史报告区 -->
         <div class="history-section">
           <div class="section-title">
             <h3>历史报告</h3>
@@ -140,32 +144,19 @@
       
       <!-- 右侧栏：报告预览 -->
       <div class="right-column">
-        <div class="preview-section">
-          <div class="section-title">
-            <h3>报告预览</h3>
-            <div class="preview-actions" v-if="reportContent">
-              <el-button type="text" @click="copyReportContent">
-                <el-icon><DocumentCopy /></el-icon> 复制内容
-              </el-button>
+        <div class="preview-section" ref="previewRef">
+          <div class="preview-header">
+            <h2>报告预览</h2>
+            <div class="preview-actions">
+              <el-button type="primary" @click="copyReportContent" :icon="DocumentCopy">复制内容</el-button>
             </div>
           </div>
           
           <div class="preview-content" v-if="reportContent">
-            <div class="report-title">{{ reportConfig.title || '销售报告' }}</div>
-            <div class="report-meta">生成时间: {{ currentDateTime }}</div>
-            
-            <div class="report-body" v-html="reportContent"></div>
+            <div class="preview-section-content" v-html="formatContent(reportContent)"></div>
           </div>
-          
-          <div class="empty-preview" v-else>
-            <el-empty description="请配置并生成报告">
-              <template #image>
-                <img src="@/assets/images/report-placeholder.png" alt="空报告" style="height: 180px;">
-              </template>
-              <template #description>
-                <p>完成左侧配置后，点击"生成报告"按钮</p>
-              </template>
-            </el-empty>
+          <div v-else class="preview-empty">
+            <el-empty description="暂无内容" />
           </div>
         </div>
       </div>
@@ -173,322 +164,247 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { DocumentCopy, Refresh, Delete, Back, Download } from '@element-plus/icons-vue';
+import { useSalesReport } from '@/api/salesReport';
+import { exportToWord } from '@/api/docExport';
 
 const router = useRouter();
 
 // 报告配置
-const reportConfig = reactive({
-  title: '',
-  reportType: '',
-  overview: '',
-  sections: ['executive_summary', 'performance_overview', 'product_sales', 'regional_analysis'],
-  depth: 'standard',
-  targetAchievement: 100,
+const reportConfig = ref({
+  productName: '',
+  productType: 'consumer',
+  marketPosition: '',
+  targetMarket: '',
+  sections: ['strategic_positioning', 'channel_defense', 'digital_sales', 'resource_model', 'risk_defense', 'result_validation'],
+  salesPeriod: 'monthly',
+  salesTarget: 100,
   additionalInfo: ''
 });
 
+// 使用销售报告API
+const { state: reportState, generateSalesReport: apiGenerateReport, stopGeneration } = useSalesReport();
+
 // 报告内容
-const reportContent = ref('');
+const reportContent = computed(() => reportState.value.content);
 
-// 历史报告
-const historyReports = ref([]);
-const selectedHistoryIndex = ref(-1);
-
-// 当前日期时间
-const currentDateTime = computed(() => {
-  const now = new Date();
-  return now.toLocaleString('zh-CN');
-});
+// 是否正在生成报告
+const isGenerating = computed(() => reportState.value.isGenerating);
 
 // 是否可以生成报告
 const canGenerate = computed(() => {
-  return reportConfig.title && reportConfig.reportType;
+  return reportConfig.value.productName.trim() !== '' && 
+         reportConfig.value.marketPosition.trim() !== '' &&
+         reportConfig.value.sections.length > 0 &&
+         !isGenerating.value;
 });
 
-// 返回按钮点击事件
+// 返回上一页
 const goBack = () => {
   router.push('/home/AI_writer/AIWriter');
 };
 
 // 生成报告
-const generateReport = () => {
+const generateReport = async () => {
+  if (reportContent.value && !isGenerating.value) {
+    try {
+      await ElMessageBox.confirm('重新生成将覆盖当前报告内容，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    } catch {
+      return;
+    }
+  }
+  
   if (!canGenerate.value) {
-    ElMessage.warning('请至少填写报告标题和报告类型');
+    ElMessage.warning('请填写必填字段');
     return;
   }
   
-  const loading = ElLoading.service({
-    lock: true,
-    text: '正在生成销售报告...',
-    background: 'rgba(255, 255, 255, 0.7)',
-  });
+  apiGenerateReport(reportConfig.value);
   
-  // 模拟异步生成报告
-  setTimeout(() => {
-    reportContent.value = generateSalesReportContent();
-    loading.close();
-    ElMessage.success('报告生成成功！');
-    
-    // 保存到历史记录
-    saveToHistory();
-  }, 2000);
+  nextTick(() => {
+    scrollToPreview();
+  });
 };
 
-// 保存为草稿
+// 保存草稿
 const saveAsDraft = () => {
   if (!reportContent.value) {
-    ElMessage.warning('请先生成报告内容');
+    ElMessage.warning('没有内容可保存');
     return;
   }
   
-  saveToHistory('草稿');
-  ElMessage.success('报告已保存为草稿');
+  const draft = {
+    title: reportConfig.value.productName,
+    content: reportContent.value,
+    date: new Date().toLocaleDateString()
+  };
+  
+  historyReports.value.unshift(draft);
+  ElMessage.success('草稿已保存');
 };
 
 // 导出报告
 const exportReport = () => {
   if (!reportContent.value) {
-    ElMessage.warning('请先生成报告内容');
+    ElMessage.warning('没有内容可导出');
     return;
   }
   
-  // 模拟导出功能
-  ElMessage.success('报告已导出');
+  const reportTitle = `${reportConfig.value.productName}销售报告`;
+  
+  ElMessageBox.confirm(
+    '请选择导出格式',
+    '导出报告',
+    {
+      confirmButtonText: 'Word文档',
+      cancelButtonText: 'Markdown',
+      distinguishCancelAndClose: true,
+      type: 'info'
+    }
+  )
+  .then(() => {
+    exportToWord(reportTitle, reportContent.value, reportTitle);
+    ElMessage.success('报告已导出为Word文档');
+  })
+  .catch((action) => {
+    if (action === 'cancel') {
+      const today = new Date().toLocaleDateString();
+      const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
+      
+      const blob = new Blob([fullReport], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reportTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      ElMessage.success('报告已导出为Markdown文件');
+    }
+  });
 };
 
-// 复制报告内容
-const copyReportContent = () => {
-  const contentToCopy = document.querySelector('.report-body').innerText;
-  navigator.clipboard.writeText(contentToCopy)
-    .then(() => {
-      ElMessage.success('报告内容已复制到剪贴板');
-    })
-    .catch(() => {
-      ElMessage.error('复制失败，请手动选择并复制');
-    });
-};
+// 历史报告
+const historyReports = ref([
+  { title: '示例报告-新产品上市', date: '2023-12-15' },
+  { title: '示例报告-季度销售分析', date: '2023-12-10' }
+]);
+
+// 选中的历史报告索引
+const selectedHistoryIndex = ref(-1);
 
 // 加载历史报告
 const loadHistoryReports = () => {
-  const savedReports = localStorage.getItem('salesHistoryReports');
-  if (savedReports) {
-    historyReports.value = JSON.parse(savedReports);
-  }
+  ElMessage.success('历史报告已刷新');
 };
 
 // 选择历史报告
 const selectHistoryReport = (index) => {
   selectedHistoryIndex.value = index;
-  const selectedReport = historyReports.value[index];
-  
-  // 更新表单和内容
-  Object.assign(reportConfig, selectedReport.config);
-  reportContent.value = selectedReport.content;
-  
-  ElMessage.success(`已加载"${selectedReport.title}"报告`);
+  reportState.value.content = '这是从服务器加载的历史报告内容示例。实际实现中，这里会加载真实的历史报告内容。';
 };
 
 // 删除历史报告
 const deleteHistoryReport = (index) => {
-  ElMessageBox.confirm(
-    '确定要删除这份历史报告吗？',
-    '删除确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    historyReports.value.splice(index, selectedHistoryIndex);
-    localStorage.setItem('salesHistoryReports', JSON.stringify(historyReports.value));
-    
+  ElMessageBox.confirm('确定要删除这份历史报告吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    historyReports.value.splice(index, selectedHistoryIndex.value === index ? 1 : 1);
     if (selectedHistoryIndex.value === index) {
       selectedHistoryIndex.value = -1;
-    } else if (selectedHistoryIndex.value > index) {
-      selectedHistoryIndex.value--;
+      reportState.value.content = '';
     }
-    
-    ElMessage.success('历史报告已删除');
+    ElMessage.success('删除成功');
   }).catch(() => {});
 };
 
-// 保存到历史记录
-const saveToHistory = (status = '已完成') => {
-  const newHistoryItem = {
-    title: reportConfig.title || '未命名报告',
-    date: new Date().toLocaleString('zh-CN'),
-    status: status,
-    config: JSON.parse(JSON.stringify(reportConfig)),
-    content: reportContent.value
-  };
-  
-  // 检查是否已有同名报告，如果有则替换
-  const existingIndex = historyReports.value.findIndex(item => item.title === newHistoryItem.title);
-  if (existingIndex >= 0) {
-    historyReports.value[existingIndex] = newHistoryItem;
-  } else {
-    historyReports.value.unshift(newHistoryItem);
+// 预览区域DOM引用
+const previewRef = ref(null);
+
+// 滚动到预览区域
+const scrollToPreview = () => {
+  if (previewRef.value) {
+    previewRef.value.scrollIntoView({ behavior: 'smooth' });
   }
-  
-  // 只保留最近10份报告
-  if (historyReports.value.length > 10) {
-    historyReports.value = historyReports.value.slice(0, 10);
-  }
-  
-  // 保存到本地存储
-  localStorage.setItem('salesHistoryReports', JSON.stringify(historyReports.value));
 };
 
-// 生成销售报告内容
-const generateSalesReportContent = () => {
-  // 根据配置生成报告内容
-  let content = '';
+// 复制报告内容
+const copyReportContent = () => {
+  const tempElement = document.createElement('div');
+  tempElement.innerHTML = reportContent.value;
+  const textContent = tempElement.textContent || tempElement.innerText || '';
   
-  // 执行摘要
-  if (reportConfig.sections.includes('executive_summary')) {
-    content += `<h2>执行摘要</h2>
-    <p>本${getReportTypeName()}涵盖了我们最近期间内的销售业绩表现，总体销售目标达成率为${reportConfig.targetAchievement}%。${reportConfig.overview}</p>`;
-  }
-  
-  // 业绩概览
-  if (reportConfig.sections.includes('performance_overview')) {
-    content += `<h2>业绩概览</h2>
-    <p>在本报告期内，我们实现了总销售额同比增长${Math.round(reportConfig.targetAchievement * 0.8)}%，整体市场份额提升了${Math.round(reportConfig.targetAchievement * 0.1)}个百分点。主要业绩指标如下：</p>
-    <ul>
-      <li>总销售额：¥ ${(Math.random() * 10000000).toFixed(2)}</li>
-      <li>销售量：${Math.round(Math.random() * 100000)} 件</li>
-      <li>新客户数：${Math.round(Math.random() * 1000)}</li>
-      <li>客单价：¥ ${(Math.random() * 1000).toFixed(2)}</li>
-    </ul>`;
-  }
-  
-  // 产品销售
-  if (reportConfig.sections.includes('product_sales')) {
-    content += `<h2>产品销售分析</h2>
-    <p>报告期内，各产品线销售情况如下：</p>
-    <table>
-      <tr>
-        <th>产品线</th>
-        <th>销售额</th>
-        <th>同比增长</th>
-        <th>毛利率</th>
-      </tr>
-      <tr>
-        <td>旗舰产品线</td>
-        <td>¥ ${(Math.random() * 5000000).toFixed(2)}</td>
-        <td>${(Math.random() * 50).toFixed(1)}%</td>
-        <td>${(Math.random() * 60 + 20).toFixed(1)}%</td>
-      </tr>
-      <tr>
-        <td>中端产品线</td>
-        <td>¥ ${(Math.random() * 3000000).toFixed(2)}</td>
-        <td>${(Math.random() * 40).toFixed(1)}%</td>
-        <td>${(Math.random() * 50 + 15).toFixed(1)}%</td>
-      </tr>
-      <tr>
-        <td>入门产品线</td>
-        <td>¥ ${(Math.random() * 2000000).toFixed(2)}</td>
-        <td>${(Math.random() * 30).toFixed(1)}%</td>
-        <td>${(Math.random() * 40 + 10).toFixed(1)}%</td>
-      </tr>
-    </table>
-    <p>我们的旗舰产品线继续保持强劲增长，尤其是在高端市场的表现尤为突出。</p>`;
-  }
-  
-  // 区域分析
-  if (reportConfig.sections.includes('regional_analysis')) {
-    content += `<h2>区域销售分析</h2>
-    <p>从区域角度来看，不同市场的表现呈现差异化：</p>
-    <ul>
-      <li>华东地区：总销售额 ¥${(Math.random() * 3000000).toFixed(2)}，同比增长 ${(Math.random() * 40).toFixed(1)}%</li>
-      <li>华北地区：总销售额 ¥${(Math.random() * 2500000).toFixed(2)}，同比增长 ${(Math.random() * 35).toFixed(1)}%</li>
-      <li>华南地区：总销售额 ¥${(Math.random() * 2000000).toFixed(2)}，同比增长 ${(Math.random() * 30).toFixed(1)}%</li>
-      <li>西部地区：总销售额 ¥${(Math.random() * 1500000).toFixed(2)}，同比增长 ${(Math.random() * 25).toFixed(1)}%</li>
-    </ul>
-    <p>华东地区依然是我们的核心市场，贡献了最大的销售份额。西部地区虽然基数较低，但增速迅猛，显示出良好的发展潜力。</p>`;
-  }
-  
-  // 客户洞察
-  if (reportConfig.sections.includes('customer_insights')) {
-    content += `<h2>客户洞察</h2>
-    <p>报告期内客户分析如下：</p>
-    <ul>
-      <li>老客户贡献率：${(Math.random() * 30 + 60).toFixed(1)}%</li>
-      <li>新客户转化率：${(Math.random() * 20 + 10).toFixed(1)}%</li>
-      <li>客户满意度：${(Math.random() * 10 + 85).toFixed(1)}%</li>
-      <li>NPS净推荐值：${(Math.random() * 30 + 40).toFixed(1)}</li>
-    </ul>
-    <p>客户留存率呈现稳步提升，尤其是高价值客户群体的忠诚度有明显提高。通过深入的客户反馈分析，我们发现产品质量和售后服务是客户最为关注的两个因素。</p>`;
-  }
-  
-  // 竞争分析
-  if (reportConfig.sections.includes('competitive_analysis')) {
-    content += `<h2>竞争分析</h2>
-    <p>行业竞争格局有以下变化：</p>
-    <ul>
-      <li>我司市场份额：${(Math.random() * 20 + 20).toFixed(1)}%（${(Math.random() * 5).toFixed(1)}%）</li>
-      <li>主要竞争对手A：${(Math.random() * 15 + 15).toFixed(1)}%（${(Math.random() * 3).toFixed(1)}%）</li>
-      <li>主要竞争对手B：${(Math.random() * 10 + 15).toFixed(1)}%（${(Math.random() * 2).toFixed(1)}%）</li>
-      <li>其他竞争对手：${(Math.random() * 40 + 30).toFixed(1)}%（${(Math.random() * -3).toFixed(1)}%）</li>
-    </ul>
-    <p>注：括号内为同比变化百分点</p>
-    <p>报告期内，我们通过产品创新和营销策略调整，成功抢占了更多市场份额。主要竞争对手A在中端市场发力，对我们构成一定挑战。</p>`;
-  }
-  
-  // 预测展望
-  if (reportConfig.sections.includes('forecast_outlook')) {
-    content += `<h2>预测与展望</h2>
-    <p>基于当前市场趋势和内部数据分析，我们对下一期的销售预测如下：</p>
-    <ul>
-      <li>预计销售增长：${(Math.random() * 15 + 10).toFixed(1)}%</li>
-      <li>重点增长产品线：${reportConfig.targetAchievement > 100 ? '旗舰产品线和中端产品线' : '中端产品线和入门产品线'}</li>
-      <li>增长最快区域：${reportConfig.targetAchievement > 100 ? '华东和西部地区' : '华北和华南地区'}</li>
-    </ul>
-    <p>市场预计将持续${reportConfig.targetAchievement > 100 ? '稳步增长' : '面临一定挑战'}，我们将根据市场变化及时调整销售策略。</p>`;
-  }
-  
-  // 行动计划
-  if (reportConfig.sections.includes('action_plan')) {
-    content += `<h2>行动计划</h2>
-    <p>为达成下期销售目标，我们制定了以下行动计划：</p>
-    <ol>
-      <li>加强销售团队培训，提升专业水平和成交能力</li>
-      <li>优化产品组合，针对不同客户群体开发差异化营销方案</li>
-      <li>深化渠道合作，扩大市场覆盖面</li>
-      <li>加强数字化营销，提升获客效率</li>
-      <li>改进客户服务流程，提高客户满意度和复购率</li>
-    </ol>
-    <p>我们将定期追踪以上行动计划的执行情况，确保销售目标的达成。</p>`;
-  }
-  
-  // 添加补充信息
-  if (reportConfig.additionalInfo) {
-    content += `<h2>补充说明</h2>
-    <p>${reportConfig.additionalInfo}</p>`;
-  }
-  
-  return content;
+  navigator.clipboard.writeText(textContent).then(() => {
+    ElMessage.success('报告内容已复制到剪贴板');
+  }).catch(err => {
+    console.error('复制失败:', err);
+    ElMessage.error('复制失败，请手动复制');
+  });
 };
 
-// 获取报告类型名称
-const getReportTypeName = () => {
-  const typeMap = {
-    'monthly': '月度销售报告',
-    'quarterly': '季度销售报告',
-    'yearly': '年度销售报告',
-    'product': '产品销售分析报告',
-    'regional': '区域销售分析报告',
-    'customer': '客户销售分析报告'
-  };
-  return typeMap[reportConfig.reportType] || '销售报告';
-};
+// 格式化报告内容
+const formatContent = (content: string) => {
+  if (!content) return '';
+  
+  let formatted = content;
+  
+  // 处理标题
+  formatted = formatted.replace(/^# (.+?)$/gm, '<h1>$1</h1>');
+  formatted = formatted.replace(/^## (.+?)$/gm, '<h2>$1</h2>');
+  formatted = formatted.replace(/^### (.+?)$/gm, '<h3>$1</h3>');
+  formatted = formatted.replace(/^#### (.+?)$/gm, '<h4>$1</h4>');
+  
+  // 处理列表
+  formatted = formatted.replace(/^- (.+?)$/gm, '<li>$1</li>');
+  formatted = formatted.replace(/^(\d+)\. (.+?)$/gm, '<li>$2</li>');
+  
+  // 将连续的<li>元素包装在<ul>或<ol>中
+  let inList = false;
+  const lines = formatted.split('\n');
+  formatted = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith('<li>')) {
+      if (!inList) {
+        formatted += '<ul>';
+        inList = true;
+      }
+      formatted += line;
+    } else {
+      if (inList) {
+        formatted += '</ul>';
+        inList = false;
+      }
+      formatted += line + '\n';
+    }
+  }
+  if (inList) {
+    formatted += '</ul>';
+  }
+  
+  // 处理段落
+  formatted = formatted.replace(/^(?!<h[1-6]|<ul|<li|<\/ul>)(.+?)$/gm, '<p>$1</p>');
+  
+  // 处理空行
+  formatted = formatted.replace(/\n\n+/g, '\n');
+  
+  return formatted;
+}
 
-// 初始化加载历史报告
+// 组件挂载时执行
 onMounted(() => {
   loadHistoryReports();
 });
@@ -573,15 +489,112 @@ onMounted(() => {
   }
   
   .preview-section {
+    background: #fff;
+    border-radius: 8px;
     padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .preview-header {
     display: flex;
-    flex-direction: column;
-    height: 100%;
-    
-    .preview-content {
-      flex: 1;
-      overflow: auto;
-    }
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .preview-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+  }
+  
+  .preview-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .preview-content {
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  .preview-section-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+  }
+  
+  .preview-section-content :deep(h1) {
+    font-size: 24px;
+    margin: 20px 0 15px;
+    color: #1a1a1a;
+    border-bottom: 2px solid #409EFF;
+    padding-bottom: 10px;
+  }
+  
+  .preview-section-content :deep(h2) {
+    font-size: 20px;
+    margin: 18px 0 12px;
+    color: #2c3e50;
+  }
+  
+  .preview-section-content :deep(h3) {
+    font-size: 16px;
+    margin: 15px 0 10px;
+    color: #34495e;
+  }
+  
+  .preview-section-content :deep(p) {
+    margin: 10px 0;
+    text-align: justify;
+  }
+  
+  .preview-section-content :deep(ul) {
+    margin: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .preview-section-content :deep(li) {
+    margin: 5px 0;
+  }
+  
+  .preview-section-content :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  
+  .preview-section-content :deep(th),
+  .preview-section-content :deep(td) {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .preview-section-content :deep(th) {
+    background-color: #f5f7fa;
+    font-weight: bold;
+  }
+  
+  .preview-section-content :deep(strong) {
+    color: #409EFF;
+    font-weight: 600;
+  }
+  
+  .preview-empty {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    border-radius: 4px;
   }
   
   .history-section {
@@ -605,65 +618,6 @@ onMounted(() => {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-    }
-  }
-  
-  .preview-content {
-    .report-title {
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    .report-meta {
-      text-align: center;
-      color: #909399;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    
-    .report-body {
-      padding: 0;
-      
-      h2 {
-        font-size: 18px;
-        margin-top: 25px;
-        margin-bottom: 15px;
-        color: #303133;
-        border-bottom: 1px solid #ebeef5;
-        padding-bottom: 8px;
-      }
-      
-      p {
-        margin: 10px 0;
-        line-height: 1.6;
-      }
-      
-      ul, ol {
-        padding-left: 20px;
-        margin: 10px 0;
-        
-        li {
-          margin-bottom: 5px;
-        }
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 15px 0;
-        
-        th, td {
-          border: 1px solid #dcdfe6;
-          padding: 8px 12px;
-          text-align: left;
-        }
-        
-        th {
-          background-color: #f5f7fa;
-        }
-      }
     }
   }
   
@@ -704,13 +658,6 @@ onMounted(() => {
       justify-content: center;
       padding: 20px 0;
     }
-  }
-  
-  .empty-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
   }
   
   .checkbox-row {

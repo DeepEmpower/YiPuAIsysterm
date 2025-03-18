@@ -142,7 +142,6 @@
             <h2>报告预览</h2>
             <div class="preview-actions">
               <el-button type="primary" @click="copyReportContent" :icon="DocumentCopy">复制内容</el-button>
-              <el-button type="success" @click="exportReport" :icon="Download">导出</el-button>
             </div>
           </div>
           
