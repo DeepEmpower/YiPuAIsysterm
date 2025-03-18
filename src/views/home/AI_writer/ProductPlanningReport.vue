@@ -278,7 +278,7 @@ const generateReport = async () => {
     ElMessage.warning('请填写产品名称和产品定位');
     return;
   }
-  
+
   // 调用API生成报告
   apiGeneratePlanning({
     productName: reportConfig.value.productName,
@@ -308,7 +308,7 @@ const saveAsDraft = () => {
   // 模拟草稿保存
   const draft = {
     title: reportConfig.value.productName,
-    content: reportContent.value,
+      content: reportContent.value,
     date: new Date().toLocaleDateString()
   };
   
@@ -608,8 +608,8 @@ const handleExport = async (type: string) => {
     display: flex;
     gap: 10px;
   }
-  
-  .preview-content {
+    
+    .preview-content {
     min-height: 300px;
     max-height: 600px;
     overflow-y: auto;

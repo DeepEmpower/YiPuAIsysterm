@@ -17,12 +17,9 @@ interface PersonnelDeploymentState {
 // 定义配置接口
 interface PersonnelDeploymentConfig {
   department: string
-  currentStaff: string
-  targetStaff: string
   businessNeeds: string
-  skillRequirements: string[]
-  deploymentPeriod: string
   additionalInfo: string
+  fileIds: string[]
 }
 
 // 创建状态
@@ -35,12 +32,9 @@ const state = ref<PersonnelDeploymentState>({
 // 创建配置
 const config = ref<PersonnelDeploymentConfig>({
   department: '',
-  currentStaff: '',
-  targetStaff: '',
   businessNeeds: '',
-  skillRequirements: [],
-  deploymentPeriod: '',
-  additionalInfo: ''
+  additionalInfo: '',
+  fileIds: []
 })
 
 // 构建查询
@@ -48,11 +42,7 @@ const buildQuery = (config: PersonnelDeploymentConfig): string => {
   const query = `请根据以下信息生成一份详细的人员调派方案：
 
 部门：${config.department}
-当前人员配置：${config.currentStaff}
-目标人员配置：${config.targetStaff}
 业务需求：${config.businessNeeds}
-技能要求：${config.skillRequirements.join('、')}
-调派周期：${config.deploymentPeriod}
 ${config.additionalInfo ? `补充信息：${config.additionalInfo}` : ''}
 
 请生成一份完整的人员调派方案，包含以下内容：
@@ -75,7 +65,7 @@ export const generatePersonnelDeployment = async (deploymentConfig: PersonnelDep
     return
   }
 
-  if (!deploymentConfig.department || !deploymentConfig.currentStaff || !deploymentConfig.targetStaff) {
+  if (!deploymentConfig.department || !deploymentConfig.businessNeeds) {
     ElMessage.warning('请填写必要信息')
     return
   }

@@ -1,18 +1,31 @@
 <template>
   <div class="personnel-deployment-container">
-    <!-- 头部导航 -->
-    <div class="header-section">
-      <el-button @click="goBack" icon="ArrowLeft">返回</el-button>
-      <div class="header-actions">
-        <el-button 
-          type="primary" 
-          :loading="state.isGenerating"
-          @click="handleGenerate"
-        >
+    <div class="page-header">
+      <div class="header-left">
+        <el-button link @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <h2>人员调派助手</h2>
+      </div>
+      <div class="header-right">
+        <el-button type="primary" @click="handleGenerate" :loading="state.isGenerating">
           生成方案
         </el-button>
-        <el-button @click="handleSave">保存</el-button>
-        <el-button @click="handleExport">导出</el-button>
+        <el-button type="success" @click="handleSave" :disabled="!state.content">
+          保存结果
+        </el-button>
+        <el-dropdown @command="handleExport" :disabled="!state.content">
+          <el-button type="warning">
+            导出方案<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="word">导出为Word</el-dropdown-item>
+              <el-dropdown-item command="markdown">导出为Markdown</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
@@ -24,53 +37,39 @@
             <el-input v-model="config.department" placeholder="请输入部门名称" />
           </el-form-item>
 
-          <el-form-item label="当前人员配置" required>
-            <el-input
-              v-model="config.currentStaff"
-              type="textarea"
-              :rows="3"
-              placeholder="请描述当前部门的人员配置情况"
-            />
-          </el-form-item>
-
-          <el-form-item label="目标人员配置" required>
-            <el-input
-              v-model="config.targetStaff"
-              type="textarea"
-              :rows="3"
-              placeholder="请描述期望的人员配置情况"
-            />
-          </el-form-item>
-
-          <el-form-item label="业务需求">
+          <el-form-item label="业务需求" required>
             <el-input
               v-model="config.businessNeeds"
               type="textarea"
-              :rows="3"
-              placeholder="请描述业务发展需求"
+              :rows="4"
+              placeholder="请详细描述业务发展需求和人员调配要求"
             />
           </el-form-item>
 
-          <el-form-item label="技能要求">
-            <el-select
-              v-model="config.skillRequirements"
+          <el-form-item label="人员档案" required>
+            <el-upload
+              class="upload-section"
+              :action="uploadUrl"
+              :headers="uploadHeaders"
+              :on-success="handleUploadSuccess"
+              :on-error="handleUploadError"
+              :before-upload="handleBeforeUpload"
+              :on-exceed="handleExceed"
+              :file-list="fileList"
               multiple
-              filterable
-              allow-create
-              default-first-option
-              placeholder="请选择或输入技能要求"
+              :limit="5"
+              accept=".pdf,.doc,.docx"
             >
-              <el-option
-                v-for="skill in skillOptions"
-                :key="skill"
-                :label="skill"
-                :value="skill"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item label="调派周期">
-            <el-input v-model="config.deploymentPeriod" placeholder="请输入调派周期" />
+              <el-button type="primary">
+                <el-icon><Upload /></el-icon>
+                上传档案
+              </el-button>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持 PDF、Word 格式文件，单个文件不超过10MB，最多上传5个文件
+                </div>
+              </template>
+            </el-upload>
           </el-form-item>
 
           <el-form-item label="补充信息">
@@ -95,8 +94,8 @@
             >
               <el-card>
                 <h4>{{ item.title }}</h4>
-                <el-button type="text" @click="loadHistory(item)">加载</el-button>
-                <el-button type="text" @click="deleteHistory(item.id)">删除</el-button>
+                <el-button type="link" @click="loadHistory(item)">加载</el-button>
+                <el-button type="link" @click="deleteHistory(item.id)">删除</el-button>
               </el-card>
             </el-timeline-item>
           </el-timeline>
@@ -108,15 +107,25 @@
         <div class="preview-header">
           <h3>方案预览</h3>
           <div class="preview-actions">
-            <el-button type="primary" @click="handleCopy">复制内容</el-button>
-            <el-button @click="handleExport">导出方案</el-button>
+            <el-button type="primary" @click="handleCopy">
+              <el-icon><DocumentCopy /></el-icon>
+              复制内容
+            </el-button>
           </div>
         </div>
-        <div class="preview-content" v-loading="state.isGenerating">
-          <div v-if="state.content" v-html="formatContent(state.content)"></div>
-          <div v-else class="empty-state">
-            <el-empty description="暂无内容，请填写配置并生成方案" />
-          </div>
+        <div class="preview-content">
+          <template v-if="state.content">
+            <div class="markdown-content" v-html="formattedContent"></div>
+          </template>
+          <template v-else-if="state.isGenerating">
+            <div class="generating-indicator">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              <span>正在生成内容...</span>
+            </div>
+          </template>
+          <template v-else>
+            <el-empty description="暂无内容"></el-empty>
+          </template>
         </div>
       </div>
     </div>
@@ -127,10 +136,58 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowLeft, DocumentCopy, Loading, ArrowDown, Upload } from '@element-plus/icons-vue'
+import { marked } from 'marked'
 import { usePersonnelDeployment } from '@/api/personnelDeployment'
+import { exportToWord } from '@/api/docExport'
 
 const router = useRouter()
 const { state, config, generatePersonnelDeployment } = usePersonnelDeployment()
+
+// 文件上传相关
+const uploadUrl = import.meta.env.VITE_API_BASE_URL + '/files/upload'
+const uploadHeaders = {
+  Authorization: `Bearer ${import.meta.env.VITE_API_TOKEN}`
+}
+const fileList = ref([])
+
+// 上传前校验
+const handleBeforeUpload = (file: File) => {
+  const isValidType = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ].includes(file.type)
+  const isLt10M = file.size / 1024 / 1024 < 10
+
+  if (!isValidType) {
+    ElMessage.error('只能上传PDF或Word文件！')
+    return false
+  }
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过10MB！')
+    return false
+  }
+  return true
+}
+
+// 上传成功回调
+const handleUploadSuccess = (response: any, file: any) => {
+  ElMessage.success(`${file.name} 上传成功`)
+  config.value.fileIds = config.value.fileIds || []
+  config.value.fileIds.push(response.file_id)
+}
+
+// 上传失败回调
+const handleUploadError = (error: any, file: any) => {
+  ElMessage.error(`${file.name} 上传失败`)
+  console.error('文件上传失败:', error)
+}
+
+// 超出数量限制
+const handleExceed = () => {
+  ElMessage.warning('最多只能上传5个文件')
+}
 
 // 技能选项
 const skillOptions = [
@@ -144,15 +201,24 @@ const skillOptions = [
   '沟通协调'
 ]
 
-// 返回上一页
-const goBack = () => {
-  router.back()
-}
+// 格式化内容
+const formattedContent = computed(() => {
+  if (!state.value.content) return ''
+  try {
+    return marked(state.value.content, {
+      breaks: true,
+      gfm: true
+    })
+  } catch (error) {
+    console.error('Markdown formatting error:', error)
+    return state.value.content
+  }
+})
 
 // 生成方案
 const handleGenerate = async () => {
-  if (!config.value.department || !config.value.currentStaff || !config.value.targetStaff) {
-    ElMessage.warning('请填写必要信息')
+  if (!config.value.department || !config.value.businessNeeds || !config.value.fileIds?.length) {
+    ElMessage.warning('请填写必要信息并上传人员档案')
     return
   }
 
@@ -175,12 +241,9 @@ const handleGenerate = async () => {
 const loadHistory = (item: any) => {
   config.value = {
     department: item.title.replace('人员调派方案', ''),
-    currentStaff: '',
-    targetStaff: '',
     businessNeeds: '',
-    skillRequirements: [],
-    deploymentPeriod: '',
-    additionalInfo: ''
+    additionalInfo: '',
+    fileIds: []
   }
   state.value.content = item.content
 }
@@ -217,22 +280,36 @@ const handleSave = () => {
   ElMessage.success('保存成功')
 }
 
-// 导出方案
-const handleExport = () => {
+// 导出功能
+const handleExport = async (type: string) => {
   if (!state.value.content) {
     ElMessage.warning('没有可导出的内容')
     return
   }
 
-  const blob = new Blob([state.value.content], { type: 'text/plain' })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${config.value.department}人员调派方案.txt`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
+  const title = `${config.value.department}人员调派方案`
+  const content = state.value.content
+
+  try {
+    if (type === 'word') {
+      // 导出为Word文档
+      await exportToWord(title, content, title)
+      ElMessage.success('导出Word文档成功')
+    } else {
+      // 导出为Markdown文件
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title}.md`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('导出Markdown文件成功')
+    }
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
 }
 
 // 复制内容
@@ -244,68 +321,77 @@ const handleCopy = () => {
 
   navigator.clipboard.writeText(state.value.content)
     .then(() => ElMessage.success('复制成功'))
-    .catch(() => ElMessage.error('复制失败'))
-}
-
-// 格式化内容
-const formatContent = (content: string) => {
-  return content
-    .replace(/\n/g, '<br>')
-    .replace(/#{1,6}\s+(.+)/g, (match, p1) => {
-      const level = match.match(/^#+/)[0].length
-      return `<h${level}>${p1}</h${level}>`
-    })
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-    .replace(/^\s*[-*+]\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>')
-    .replace(/\|(.+?)\|/g, '<td>$1</td>')
-    .replace(/(<td>.*<\/td>)/s, '<tr>$1</tr>')
-    .replace(/(<tr>.*<\/tr>)/s, '<table>$1</table>')
+    .catch(() => ElMessage.error('复制失败，请手动复制'))
 }
 </script>
 
 <style scoped lang="scss">
 .personnel-deployment-container {
-  padding: 20px;
-  background-color: #f5f7fa;
-  min-height: calc(100vh - 100px);
+  padding: 0;
+  background-color: #f0f2f5;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
-  .header-section {
+  .page-header {
+    padding: 10px 20px;
+    background-color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid #e4e7ed;
 
-    .header-actions {
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .header-right {
       display: flex;
       gap: 10px;
     }
   }
 
   .main-content {
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    padding: 20px;
+    overflow: hidden;
 
     .config-section {
-      background-color: #fff;
-      padding: 20px;
+      background-color: white;
       border-radius: 8px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      overflow-y: auto;
+
+      .upload-section {
+        :deep(.el-upload-list) {
+          margin-top: 10px;
+        }
+
+        :deep(.el-upload__tip) {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #909399;
+        }
+      }
 
       .history-section {
-        margin-top: 30px;
+        margin-top: 20px;
         padding-top: 20px;
-        border-top: 1px solid #ebeef5;
+        border-top: 1px solid #e4e7ed;
 
         h3 {
           margin-bottom: 15px;
@@ -315,17 +401,18 @@ const formatContent = (content: string) => {
     }
 
     .preview-section {
-      background-color: #fff;
+      background-color: white;
       border-radius: 8px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
 
       .preview-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #e4e7ed;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #ebeef5;
 
         h3 {
           margin: 0;
@@ -339,83 +426,124 @@ const formatContent = (content: string) => {
       }
 
       .preview-content {
+        flex: 1;
         padding: 20px;
-        min-height: 500px;
-        max-height: calc(100vh - 300px);
         overflow-y: auto;
+        background: #ffffff;
+        color: #303133;
+        font-size: 14px;
+        line-height: 1.6;
 
-        :deep(h1) {
-          font-size: 24px;
-          color: #303133;
-          margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 2px solid #409eff;
-        }
-
-        :deep(h2) {
-          font-size: 20px;
-          color: #303133;
-          margin: 20px 0 15px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #ebeef5;
-        }
-
-        :deep(h3) {
-          font-size: 18px;
-          color: #303133;
-          margin: 15px 0 10px;
-        }
-
-        :deep(p) {
-          line-height: 1.6;
-          color: #606266;
-          margin-bottom: 15px;
-        }
-
-        :deep(ul), :deep(ol) {
-          padding-left: 20px;
-          margin-bottom: 15px;
-
-          li {
-            line-height: 1.6;
-            color: #606266;
-            margin-bottom: 8px;
-          }
-        }
-
-        :deep(table) {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 15px;
-
-          td {
-            padding: 8px;
-            border: 1px solid #ebeef5;
-            color: #606266;
-          }
-        }
-
-        :deep(code) {
-          background-color: #f5f7fa;
-          padding: 2px 4px;
-          border-radius: 4px;
-          font-family: monospace;
-        }
-
-        :deep(a) {
-          color: #409eff;
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-
-        .empty-state {
+        .generating-indicator {
           display: flex;
-          justify-content: center;
           align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #409EFF;
+          font-size: 14px;
           height: 100%;
+          min-height: 200px;
+
+          .el-icon {
+            font-size: 20px;
+          }
+        }
+
+        .markdown-content {
+          white-space: pre-wrap;
+          word-break: break-word;
+
+          :deep(*) {
+            max-width: 100%;
+            color: #303133;
+          }
+
+          :deep(h1) {
+            font-size: 24px;
+            margin: 20px 0 15px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #409EFF;
+            padding-bottom: 10px;
+          }
+
+          :deep(h2) {
+            font-size: 20px;
+            margin: 18px 0 12px;
+            color: #2c3e50;
+          }
+
+          :deep(h3) {
+            font-size: 16px;
+            margin: 15px 0 10px;
+            color: #34495e;
+          }
+
+          :deep(p) {
+            margin: 10px 0;
+            text-align: justify;
+            line-height: 1.6;
+            color: #303133;
+          }
+
+          :deep(ul), :deep(ol) {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #303133;
+          }
+
+          :deep(li) {
+            margin: 5px 0;
+            color: #303133;
+          }
+
+          :deep(table) {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            color: #303133;
+          }
+
+          :deep(th), :deep(td) {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            color: #303133;
+          }
+
+          :deep(th) {
+            background-color: #f5f7fa;
+            font-weight: bold;
+          }
+
+          :deep(strong) {
+            color: #409EFF;
+            font-weight: 600;
+          }
+
+          :deep(code) {
+            background-color: #f5f7fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #303133;
+          }
+
+          :deep(pre) {
+            background-color: #f5f7fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+            color: #303133;
+          }
+
+          :deep(blockquote) {
+            border-left: 4px solid #409EFF;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background-color: #f5f7fa;
+            color: #303133;
+          }
         }
       }
     }
