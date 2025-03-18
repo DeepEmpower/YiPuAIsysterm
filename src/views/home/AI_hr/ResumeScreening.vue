@@ -15,9 +15,17 @@
         <el-button type="success" @click="saveReport" :disabled="!state.content">
           保存结果
         </el-button>
-        <el-button type="warning" @click="exportReport" :disabled="!state.content">
-          导出结果
-        </el-button>
+        <el-dropdown @command="handleExport" :disabled="!state.content">
+          <el-button type="warning">
+            导出结果<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="word">导出为Word</el-dropdown-item>
+              <el-dropdown-item command="markdown">导出为Markdown</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
@@ -113,9 +121,10 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, DocumentCopy, Loading } from '@element-plus/icons-vue'
+import { ArrowLeft, DocumentCopy, Loading, ArrowDown } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { useResumeScreening } from '@/api/resumeScreening'
+import { exportToWord } from '@/api/docExport'
 
 const router = useRouter()
 const { state, config, generateResumeScreening } = useResumeScreening()
@@ -201,19 +210,35 @@ const saveReport = () => {
   ElMessage.success('保存成功')
 }
 
-const exportReport = () => {
+const handleExport = async (type: string) => {
   if (!state.value.content) {
     ElMessage.warning('没有可导出的内容')
     return
   }
 
-  const blob = new Blob([state.value.content], { type: 'text/plain;charset=utf-8' })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${config.value.title}简历筛选结果.md`
-  link.click()
-  window.URL.revokeObjectURL(url)
+  const title = `${config.value.title}简历筛选结果`
+  const content = state.value.content
+
+  try {
+    if (type === 'word') {
+      // 导出为Word文档
+      await exportToWord(title, content, title)
+      ElMessage.success('导出Word文档成功')
+    } else {
+      // 导出为Markdown文件
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title}.md`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('导出Markdown文件成功')
+    }
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
 }
 
 const copyReportContent = async () => {

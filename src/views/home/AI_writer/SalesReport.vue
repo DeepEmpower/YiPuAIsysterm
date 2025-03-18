@@ -13,7 +13,17 @@
       <div class="action-area">
         <el-button type="primary" @click="generateReport" :disabled="!canGenerate">生成报告</el-button>
         <el-button @click="saveAsDraft" :disabled="!reportContent">保存草稿</el-button>
-        <el-button type="success" @click="exportReport" :disabled="!reportContent">导出报告</el-button>
+        <el-dropdown @command="handleExport" :disabled="!reportContent">
+          <el-button type="warning">
+            导出报告<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="word">导出为Word</el-dropdown-item>
+              <el-dropdown-item command="markdown">导出为Markdown</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
@@ -168,9 +178,10 @@
 import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back, Download } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, Back, ArrowDown } from '@element-plus/icons-vue';
 import { useSalesReport } from '@/api/salesReport';
 import { exportToWord } from '@/api/docExport';
+import { marked } from 'marked';
 
 const router = useRouter();
 
@@ -252,47 +263,36 @@ const saveAsDraft = () => {
 };
 
 // 导出报告
-const exportReport = () => {
+const handleExport = async (type: string) => {
   if (!reportContent.value) {
-    ElMessage.warning('没有内容可导出');
-    return;
+    ElMessage.warning('没有可导出的内容')
+    return
   }
-  
-  const reportTitle = `${reportConfig.value.productName}销售报告`;
-  
-  ElMessageBox.confirm(
-    '请选择导出格式',
-    '导出报告',
-    {
-      confirmButtonText: 'Word文档',
-      cancelButtonText: 'Markdown',
-      distinguishCancelAndClose: true,
-      type: 'info'
+
+  const title = `${reportConfig.value.productName}销售报告`
+  const content = reportContent.value
+
+  try {
+    if (type === 'word') {
+      // 导出为Word文档
+      await exportToWord(title, content, title)
+      ElMessage.success('导出Word文档成功')
+    } else {
+      // 导出为Markdown文件
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title}.md`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('导出Markdown文件成功')
     }
-  )
-  .then(() => {
-    exportToWord(reportTitle, reportContent.value, reportTitle);
-    ElMessage.success('报告已导出为Word文档');
-  })
-  .catch((action) => {
-    if (action === 'cancel') {
-      const today = new Date().toLocaleDateString();
-      const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
-      
-      const blob = new Blob([fullReport], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${reportTitle}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      ElMessage.success('报告已导出为Markdown文件');
-    }
-  });
-};
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
+}
 
 // 历史报告
 const historyReports = ref([

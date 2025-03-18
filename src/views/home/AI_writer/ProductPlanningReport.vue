@@ -1,19 +1,32 @@
 <template>
   <div class="product-planning-container">
     <!-- 顶部标题和操作栏 -->
-    <div class="header-section">
-      <div class="title-area">
-        <div class="title-text">
-          <el-icon><Back /></el-icon>
-          <a href="#" @click.prevent="goBack">返回AI文员团队</a>
-          <span class="divider">|</span>
-          <span class="page-title">产品策划编写</span>
-        </div>
+    <div class="page-header">
+      <div class="header-left">
+        <el-button link @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <h2>产品策划编写助手</h2>
       </div>
-      <div class="action-area">
-        <el-button type="primary" @click="generateReport" :disabled="!canGenerate">生成策划</el-button>
-        <el-button @click="saveAsDraft" :disabled="!reportContent">保存草稿</el-button>
-        <el-button type="success" @click="showExportDialog" :disabled="!reportContent">导出策划</el-button>
+      <div class="header-right">
+        <el-button type="primary" @click="generateReport" :loading="isGenerating">
+          生成策划
+        </el-button>
+        <el-button type="success" @click="saveReport" :disabled="!reportContent">
+          保存结果
+        </el-button>
+        <el-dropdown @command="handleExport" :disabled="!reportContent">
+          <el-button type="warning">
+            导出策划<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="word">导出为Word</el-dropdown-item>
+              <el-dropdown-item command="markdown">导出为Markdown</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
@@ -184,9 +197,10 @@
 import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back, Loading, Download } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, ArrowLeft, ArrowDown } from '@element-plus/icons-vue';
 import { useProductPlanning } from '@/api/productPlanning';
 import { exportToWord } from '@/api/docExport';
+import { marked } from 'marked';
 
 const router = useRouter();
 
@@ -469,6 +483,38 @@ const formatContent = (content: string) => {
 onMounted(() => {
   loadHistoryReports();
 });
+
+// 导出功能
+const handleExport = async (type: string) => {
+  if (!reportContent.value) {
+    ElMessage.warning('没有可导出的内容')
+    return
+  }
+
+  const title = `${reportConfig.value.productName}产品策划方案`
+  const content = reportContent.value
+
+  try {
+    if (type === 'word') {
+      // 导出为Word文档
+      await exportToWord(title, content, title)
+      ElMessage.success('导出Word文档成功')
+    } else {
+      // 导出为Markdown文件
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title}.md`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('导出Markdown文件成功')
+    }
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -481,7 +527,7 @@ onMounted(() => {
   flex-direction: column;
   overflow: hidden;
   
-  .header-section {
+  .page-header {
     padding: 10px 20px;
     background-color: white;
     display: flex;
@@ -489,33 +535,19 @@ onMounted(() => {
     align-items: center;
     border-bottom: 1px solid #e4e7ed;
     
-    .title-text {
+    .header-left {
       display: flex;
       align-items: center;
       font-size: 14px;
       
-      a {
-        color: #409EFF;
-        text-decoration: none;
-        margin-left: 5px;
-        
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-      
-      .divider {
-        margin: 0 10px;
-        color: #dcdfe6;
-      }
-      
-      .page-title {
+      h2 {
         font-weight: 600;
         color: #303133;
+        margin-left: 10px;
       }
     }
     
-    .action-area {
+    .header-right {
       display: flex;
       gap: 10px;
     }
