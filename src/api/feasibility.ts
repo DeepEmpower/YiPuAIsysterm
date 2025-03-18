@@ -187,14 +187,12 @@ export function useFeasibilityReport() {
     // 翻译节段名称
     const translateSection = (section: string): string => {
       const translations: Record<string, string> = {
-        'executive_summary': '执行摘要',
+        'project_background': '项目背景',
         'market_analysis': '市场分析',
-        'technical_analysis': '技术可行性分析',
-        'financial_analysis': '财务分析',
+        'technical_solution': '技术方案',
+        'financial_evaluation': '财务评估',
         'risk_analysis': '风险分析',
-        'implementation_plan': '实施计划',
         'conclusion': '结论与建议',
-        'appendix': '附录'
       };
       
       return translations[section] || section;

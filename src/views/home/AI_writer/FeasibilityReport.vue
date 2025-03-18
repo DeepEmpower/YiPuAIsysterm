@@ -55,20 +55,16 @@
             <el-form-item label="报告内容选项">
               <el-checkbox-group v-model="reportConfig.sections">
                 <div class="checkbox-row">
-                  <el-checkbox label="executive_summary">执行摘要</el-checkbox>
-                  <el-checkbox label="market_analysis">市场分析</el-checkbox>
+                  <el-checkbox label="project_background">项目背景（必要性、政策依据）</el-checkbox>
+                  <el-checkbox label="market_analysis">市场分析（需求、竞争、趋势）</el-checkbox>
                 </div>
                 <div class="checkbox-row">
-                  <el-checkbox label="technical_analysis">技术可行性</el-checkbox>
-                  <el-checkbox label="financial_analysis">财务分析</el-checkbox>
+                  <el-checkbox label="technical_solution">技术方案（技术路线、设备选型）</el-checkbox>
+                  <el-checkbox label="financial_evaluation">财务评估（投资、成本收益）</el-checkbox>
                 </div>
                 <div class="checkbox-row">
-                  <el-checkbox label="risk_analysis">风险分析</el-checkbox>
-                  <el-checkbox label="implementation_plan">实施计划</el-checkbox>
-                </div>
-                <div class="checkbox-row">
+                  <el-checkbox label="risk_analysis">风险与对策（政策、市场、技术风险）</el-checkbox>
                   <el-checkbox label="conclusion">结论与建议</el-checkbox>
-                  <el-checkbox label="appendix">附录</el-checkbox>
                 </div>
               </el-checkbox-group>
             </el-form-item>
@@ -184,7 +180,7 @@ const reportConfig = ref({
   projectName: '',
   projectType: 'product',
   background: '',
-  sections: ['executive_summary', 'market_analysis', 'technical_analysis', 'financial_analysis'],
+  sections: ['project_background', 'market_analysis', 'technical_solution', 'financial_evaluation', 'risk_analysis', 'conclusion'],
   depth: 'standard',
   budget: [100, 500],
   additionalInfo: ''
