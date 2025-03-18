@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
 
 // 定义状态接口
 interface ResumeScreeningState {
@@ -37,29 +36,37 @@ const config = ref<ResumeScreeningConfig>({
   files: []
 })
 
-// 构建查询
-const buildQuery = (config: ResumeScreeningConfig): string => {
-  const query = `请根据以下招聘要求对简历进行筛选：
+// 上传文件到服务器并获取文件ID
+const uploadFile = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file, file.name)  // 添加文件名
+  formData.append('user', 'abc-123')  // 添加用户信息
+  
+  try {
+    const response = await fetch('/dify-api/v1/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B'  // 更新token
+      },
+      body: formData
+    })
 
-职位名称：${config.title}
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('文件上传失败:', errorData)
+      throw new Error(errorData.message || '文件上传失败')
+    }
 
-职位要求：
-${config.requirements}
-
-${config.additional ? `补充说明：${config.additional}` : ''}
-
-请对上传的简历进行筛选，并给出详细的筛选结果，包括：
-1. 候选人基本信息
-2. 教育背景评估
-3. 工作经验评估
-4. 技能匹配度分析
-5. 项目经历评估
-6. 证书资质评估
-7. 综合评分
-8. 筛选建议
-
-请确保筛选结果客观公正，并给出具体的筛选理由。`
-  return query
+    const result = await response.json()
+    console.log('文件上传结果:', result)
+    if (!result.id) {
+      throw new Error('文件上传成功但未返回文件ID')
+    }
+    return result.id
+  } catch (error) {
+    console.error('文件上传失败:', error)
+    throw error
+  }
 }
 
 // 生成简历筛选结果
@@ -79,44 +86,108 @@ export const generateResumeScreening = async (screeningConfig: ResumeScreeningCo
     return
   }
 
-  state.value.isGenerating = true
-  state.value.content = ''
-
   try {
-    const query = buildQuery(screeningConfig)
-    const response = await axios.post(
-      'http://115.190.30.196:2001/v1/chat-messages',
-      {
-        query,
-        user: 'abc-123',
-        response_mode: 'streaming',
-        conversation_id: '',
-      },
-      {
-        headers: {
-          'Authorization': 'Bearer app-X7YkTKQgqHD0KcZmIVFCRDeK',
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    state.value.isGenerating = true
+    state.value.content = ''
 
-    if (response.data && response.data.answer) {
-      state.value.content = response.data.answer
-      
-      // 添加到历史记录
-      state.value.history.unshift({
-        id: Date.now().toString(),
-        title: `${screeningConfig.title}简历筛选结果`,
-        content: response.data.answer,
-        timestamp: new Date().toLocaleString()
-      })
-      
-      // 保存到本地存储
-      localStorage.setItem('resumeScreeningHistory', JSON.stringify(state.value.history))
+    // 先上传所有文件
+    const uploadPromises = screeningConfig.files.map(file => uploadFile(file.raw))
+    const fileIds = await Promise.all(uploadPromises)
+    console.log('上传的文件IDs:', fileIds)
+
+    // 准备文件列表数据
+    const x_list = fileIds.map(id => ({
+      type: 'document',
+      transfer_method: 'local_file',
+      upload_file_id: id  // 改回 upload_file_id
+    }))
+
+    // 构建请求数据
+    const requestData = {
+      inputs: {
+        x_list
+      },
+      query: `职位名称：${screeningConfig.title}\n职位要求：${screeningConfig.requirements}${screeningConfig.additional ? '\n补充说明：' + screeningConfig.additional : ''}`,
+      response_mode: 'streaming',
+      conversation_id: '',
+      user: 'abc-123'
     }
+
+    console.log('发送的请求数据:', requestData)
+
+    // 发送请求
+    const response = await fetch('/dify-api/v1/chat-messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('API请求失败:', errorData)
+      throw new Error(errorData.message || 'API请求失败')
+    }
+
+    // 处理流式响应
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+
+    if (reader) {
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        buffer += chunk
+
+        // 处理 SSE 格式的数据
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // 保留最后一个不完整的行
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonStr = line.slice(6) // 移除 'data: ' 前缀
+              const data = JSON.parse(jsonStr)
+              console.log('Received SSE message:', data)
+              
+              if (data.event === 'message' && data.answer) {
+                state.value.content += data.answer
+                console.log('Updated content:', state.value.content)
+              }
+            } catch (e) {
+              console.error('Error parsing SSE message:', e)
+            }
+          }
+        }
+      }
+    }
+
+    // 检查是否生成了内容
+    if (!state.value.content) {
+      console.warn('No content was generated')
+      throw new Error('未能生成内容，请重试')
+    }
+
+    // 添加到历史记录
+    state.value.history.unshift({
+      id: Date.now().toString(),
+      title: `${screeningConfig.title}简历筛选结果`,
+      content: state.value.content,
+      timestamp: new Date().toLocaleString()
+    })
+    
+    // 保存到本地存储
+    localStorage.setItem('resumeScreeningHistory', JSON.stringify(state.value.history))
+
   } catch (error) {
-    console.error('简历筛选失败:', error)
-    ElMessage.error('筛选失败，请重试')
+    console.error('生成简历筛选报告失败:', error)
+    ElMessage.error(error instanceof Error ? error.message : '筛选失败，请重试')
+    throw error
   } finally {
     state.value.isGenerating = false
   }

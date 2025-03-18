@@ -75,8 +75,8 @@
             >
               <el-card>
                 <h4>{{ item.title }}</h4>
-                <el-button type="text" @click="loadHistory(item)">加载</el-button>
-                <el-button type="text" @click="deleteHistory(item.id)">删除</el-button>
+                <el-button type="link" @click="loadHistory(item)">加载</el-button>
+                <el-button type="link" @click="deleteHistory(item.id)">删除</el-button>
               </el-card>
             </el-timeline-item>
           </el-timeline>
@@ -90,9 +90,13 @@
             <el-button type="primary" @click="copyReportContent" :icon="DocumentCopy">复制内容</el-button>
           </div>
         </div>
-        <div class="preview-content" v-loading="state.isGenerating">
-          <div v-if="state.content" v-html="formattedContent"></div>
-          <el-empty v-else description="暂无内容"></el-empty>
+        <div class="preview-content">
+          <div v-if="state.content" class="markdown-content" v-html="formattedContent"></div>
+          <div v-if="state.isGenerating" class="generating-indicator">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>正在生成内容...</span>
+          </div>
+          <el-empty v-if="!state.content && !state.isGenerating" description="暂无内容"></el-empty>
         </div>
       </div>
     </div>
@@ -103,7 +107,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, DocumentCopy } from '@element-plus/icons-vue'
+import { ArrowLeft, DocumentCopy, Loading } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { useResumeScreening } from '@/api/resumeScreening'
 
@@ -111,8 +115,22 @@ const router = useRouter()
 const { state, config, generateResumeScreening } = useResumeScreening()
 
 const formattedContent = computed(() => {
-  if (!state.value.content) return ''
-  return marked(state.value.content)
+  if (!state.value.content) {
+    console.log('No content available')
+    return ''
+  }
+  try {
+    console.log('Content before formatting:', state.value.content)
+    const formatted = marked(state.value.content, {
+      breaks: true,
+      gfm: true
+    })
+    console.log('Formatted content:', formatted)
+    return formatted
+  } catch (error) {
+    console.error('Markdown formatting error:', error)
+    return state.value.content
+  }
 })
 
 const handleFileChange = (file: any) => {
@@ -146,7 +164,17 @@ const generateReport = async () => {
     }
   }
 
-  await generateResumeScreening(config.value)
+  try {
+    console.log('Starting report generation with config:', config.value)
+    await generateResumeScreening(config.value)
+    console.log('Generated content:', state.value.content)
+    if (!state.value.content) {
+      ElMessage.warning('生成的内容为空，请重试')
+    }
+  } catch (error) {
+    console.error('Error generating report:', error)
+    ElMessage.error('生成报告失败，请重试')
+  }
 }
 
 const saveReport = () => {
@@ -244,6 +272,15 @@ const deleteHistory = (id: string) => {
       align-items: center;
       gap: 12px;
 
+      :deep(.el-button) {
+        padding: 0;
+        height: auto;
+        
+        .el-icon {
+          margin-right: 4px;
+        }
+      }
+
       h2 {
         margin: 0;
         font-size: 14px;
@@ -331,67 +368,130 @@ const deleteHistory = (id: string) => {
       }
 
       .preview-content {
+        position: relative;
         flex: 1;
         overflow-y: auto;
         padding: 20px;
-        background: #f9f9f9;
+        background: #ffffff;
         border-radius: 4px;
         margin: 0;
+        min-height: 200px;
+        color: #303133;
+        font-size: 14px;
+        line-height: 1.6;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 
-        :deep(h1) {
-          font-size: 24px;
-          margin: 20px 0 15px;
-          color: #1a1a1a;
-          border-bottom: 2px solid #409EFF;
-          padding-bottom: 10px;
-        }
-
-        :deep(h2) {
-          font-size: 20px;
-          margin: 18px 0 12px;
-          color: #2c3e50;
-        }
-
-        :deep(h3) {
-          font-size: 16px;
-          margin: 15px 0 10px;
-          color: #34495e;
-        }
-
-        :deep(p) {
-          margin: 10px 0;
-          text-align: justify;
-        }
-
-        :deep(ul), :deep(ol) {
-          margin: 10px 0;
-          padding-left: 20px;
-        }
-
-        :deep(li) {
-          margin: 5px 0;
-        }
-
-        :deep(table) {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 15px 0;
-        }
-
-        :deep(th), :deep(td) {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-
-        :deep(th) {
-          background-color: #f5f7fa;
-          font-weight: bold;
-        }
-
-        :deep(strong) {
+        .generating-indicator {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          align-items: center;
+          gap: 8px;
           color: #409EFF;
-          font-weight: 600;
+          font-size: 14px;
+
+          .el-icon {
+            font-size: 20px;
+          }
+        }
+
+        .markdown-content {
+          white-space: pre-wrap;
+          word-break: break-word;
+          
+          :deep(*) {
+            max-width: 100%;
+            color: #303133;
+          }
+          
+          :deep(h1) {
+            font-size: 24px;
+            margin: 20px 0 15px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #409EFF;
+            padding-bottom: 10px;
+          }
+
+          :deep(h2) {
+            font-size: 20px;
+            margin: 18px 0 12px;
+            color: #2c3e50;
+          }
+
+          :deep(h3) {
+            font-size: 16px;
+            margin: 15px 0 10px;
+            color: #34495e;
+          }
+
+          :deep(p) {
+            margin: 10px 0;
+            text-align: justify;
+            line-height: 1.6;
+            color: #303133;
+          }
+
+          :deep(ul), :deep(ol) {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #303133;
+          }
+
+          :deep(li) {
+            margin: 5px 0;
+            color: #303133;
+          }
+
+          :deep(table) {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            color: #303133;
+          }
+
+          :deep(th), :deep(td) {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            color: #303133;
+          }
+
+          :deep(th) {
+            background-color: #f5f7fa;
+            font-weight: bold;
+          }
+
+          :deep(strong) {
+            color: #409EFF;
+            font-weight: 600;
+          }
+
+          :deep(code) {
+            background-color: #f5f7fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #303133;
+          }
+
+          :deep(pre) {
+            background-color: #f5f7fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+            color: #303133;
+          }
+
+          :deep(blockquote) {
+            border-left: 4px solid #409EFF;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background-color: #f5f7fa;
+            color: #303133;
+          }
         }
       }
     }
@@ -400,5 +500,37 @@ const deleteHistory = (id: string) => {
 
 :deep(.el-form-item__label) {
   font-weight: 500;
+}
+
+.history-section {
+  .history-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+
+    :deep(.el-button) {
+      padding: 0;
+      height: auto;
+    }
+  }
+
+  .el-timeline {
+    padding: 0;
+    
+    :deep(.el-timeline-item__node) {
+      background-color: #409EFF;
+    }
+
+    :deep(.el-card) {
+      border: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+      h4 {
+        margin: 0;
+        font-size: 14px;
+        color: #303133;
+      }
+    }
+  }
 }
 </style> 

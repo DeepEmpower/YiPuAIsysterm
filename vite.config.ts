@@ -72,9 +72,16 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       // 代理跨域（模拟示例）
       proxy: {
         "/api": {
-          target: "http://maas-api.cn-huabei-1.xf-yun.com", // easymock
+          target: process.env.VITE_API_BASE_URL,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+              proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+              proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+            });
+          }
         },
         "/img": {
           target: "https://dashscope.aliyuncs.com", // easymock
@@ -122,7 +129,17 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
         '/dify-api': {
           target: 'http://115.190.30.196:2001',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/dify-api/, '')
+          rewrite: (path) => path.replace(/^\/dify-api/, ''),
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              proxyReq.setHeader('Authorization', 'Bearer app-9HTpI2wqYvGALXf3S9k2MCrx');
+              if (req.method === 'OPTIONS') {
+                proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+                proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+                proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+              }
+            });
+          }
         }
       },
     },
