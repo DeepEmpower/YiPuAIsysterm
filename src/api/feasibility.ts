@@ -44,7 +44,7 @@ export function useFeasibilityReport() {
       const query = buildQuery(config);
       
       // 发送请求到Dify API
-      const response = await fetch('/dify-api/v1/chat-messages', {
+      const response = await fetch('http://115.190.30.196:2001/v1/chat-messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,13 +55,19 @@ export function useFeasibilityReport() {
           query: query,
           response_mode: "streaming",
           conversation_id: "",
-          user: "user-" + Date.now()  // 生成唯一用户ID
+          user: "abc-123"
         }),
-        signal: controller.signal  // 传递AbortSignal
+        signal: controller.signal
       });
       
       if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status}`);
+        const errorData = await response.json()
+        console.error('API请求失败:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        })
+        throw new Error(`API请求失败: ${errorData.message || response.statusText}`)
       }
       
       // 处理流式响应
@@ -71,6 +77,7 @@ export function useFeasibilityReport() {
       }
       
       const decoder = new TextDecoder();
+      let buffer = '';
       
       // 循环读取流数据
       while (true) {
@@ -79,9 +86,42 @@ export function useFeasibilityReport() {
         
         // 解码数据块
         const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
         
         // 处理数据块
-        processStreamChunk(chunk);
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 保留最后一个不完整的行
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6);
+            
+            // 跳过特殊的流结束标记
+            if (jsonStr === '[DONE]') {
+              console.log('流结束');
+              continue;
+            }
+            
+            try {
+              const data = JSON.parse(jsonStr);
+              console.log('Received SSE message:', data);
+              
+              if (data.event === 'error') {
+                console.error('API错误:', data);
+                throw new Error(data.message || 'API返回错误');
+              }
+              
+              if (data.answer) {
+                state.value.content += data.answer;
+              }
+            } catch (e) {
+              console.error('解析数据块失败:', e);
+              if (e instanceof Error) {
+                throw e;
+              }
+            }
+          }
+        }
       }
       
       // 处理完成
@@ -106,79 +146,6 @@ export function useFeasibilityReport() {
     if (controller) {
       controller.abort();
       state.value.isGenerating = false;
-    }
-  };
-  
-  // 处理流式数据块
-  const processStreamChunk = (chunk: string) => {
-    // 分割成行并过滤空行
-    const lines = chunk.split('\n').filter(line => line.trim());
-    
-    for (const line of lines) {
-      try {
-        // 检查是否是以 "data: " 开头
-        if (line.startsWith('data: ')) {
-          const jsonStr = line.substring(6);
-          
-          // 跳过特殊的流结束标记
-          if (jsonStr === '[DONE]') {
-            console.log('流结束');
-            continue;
-          }
-          
-          // 安全解析JSON，处理可能的截断数据
-          let data;
-          try {
-            // 解析JSON数据
-            data = JSON.parse(jsonStr);
-          } catch (jsonError) {
-            console.warn('JSON解析失败，可能是不完整的数据块:', jsonError);
-            continue; // 跳过这个不完整的数据块
-          }
-          
-          // 处理消息事件
-          if (data.event === 'message') {
-            if (data.answer) {
-              state.value.content += data.answer;
-            }
-          } 
-          // 处理聊天消息事件
-          else if (data.event === 'agent_message') {
-            if (data.message && data.message.content) {
-              state.value.content += data.message.content;
-            }
-          }
-          // 处理文本事件 (用于兼容其他可能的响应格式)
-          else if (data.event === 'text' && data.text) {
-            state.value.content += data.text;
-          }
-          // 处理错误事件
-          else if (data.event === 'error') {
-            state.value.error = data.message || '生成过程中出现错误';
-            console.error('API错误:', data);
-          }
-          // 处理完成事件
-          else if (data.event === 'completed') {
-            console.log('生成完成');
-          }
-          // 记录其他事件类型以便调试
-          else {
-            console.log('其他事件类型:', data.event);
-            // 尝试从其他可能的字段中提取内容
-            if (data.content) {
-              state.value.content += data.content;
-            } else if (data.text) {
-              state.value.content += data.text;
-            } else if (data.message && typeof data.message === 'string') {
-              state.value.content += data.message;
-            }
-          }
-        } else {
-          console.log('非数据行:', line);
-        }
-      } catch (e) {
-        console.error('解析数据块失败:', e, '行内容:', line);
-      }
     }
   };
   
@@ -215,12 +182,16 @@ export function useFeasibilityReport() {
       'other': '其他类型'
     };
     
-    return `项目名称：${config.projectName}
-项目类型：${projectTypeMap[config.projectType] || config.projectType}
+    // 简化查询字符串格式
+    return `请生成一个${depthMap[config.depth] || config.depth}的${projectTypeMap[config.projectType] || config.projectType}项目可行性研究报告。
+
+项目名称：${config.projectName}
 项目背景：${config.background}
-报告深度：${depthMap[config.depth] || config.depth}
 预算范围：${config.budget[0]}-${config.budget[1]}万元
-需要包含的章节：${config.sections.map(section => translateSection(section)).join('、')}
+
+需要包含以下章节：
+${config.sections.map(section => translateSection(section)).join('\n')}
+
 ${config.additionalInfo ? `补充信息：${config.additionalInfo}` : ''}`;
   };
   

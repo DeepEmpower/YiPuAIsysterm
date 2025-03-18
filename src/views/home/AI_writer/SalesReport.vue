@@ -165,6 +165,13 @@
           <div class="preview-content" v-if="reportContent">
             <div class="preview-section-content" v-html="formatContent(reportContent)"></div>
           </div>
+          <div v-else-if="isGenerating" class="preview-loading">
+            <el-empty description="正在生成报告，请稍候...">
+              <template #image>
+                <el-icon class="loading-icon"><Loading /></el-icon>
+              </template>
+            </el-empty>
+          </div>
           <div v-else class="preview-empty">
             <el-empty description="暂无内容" />
           </div>
@@ -178,7 +185,7 @@
 import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back, ArrowDown } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, Back, ArrowDown, Loading } from '@element-plus/icons-vue';
 import { useSalesReport } from '@/api/salesReport';
 import { exportToWord } from '@/api/docExport';
 import { marked } from 'marked';
@@ -595,6 +602,30 @@ onMounted(() => {
     justify-content: center;
     background: #f9f9f9;
     border-radius: 4px;
+  }
+  
+  .preview-loading {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    border-radius: 4px;
+
+    .loading-icon {
+      font-size: 48px;
+      color: #409EFF;
+      animation: rotate 2s linear infinite;
+    }
+  }
+  
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
   
   .history-section {
