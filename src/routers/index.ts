@@ -125,10 +125,10 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         meta: { title: 'AI人力', icon: 'MenuIcon' }, // 设置标题和图标
       },
       {
-        path: '/home/AI_hr/job-description',
-        component: () => import('@/views/home/AI_hr/JobDescription.vue'),
-        name: 'JobDescription',
-        meta: { title: '职位描述编写', keepAlive: true, icon: 'Document' },
+        path: '/home/AI_hr/resume-screening',
+        component: () => import('@/views/home/AI_hr/ResumeScreening.vue'),
+        name: 'ResumeScreening',
+        meta: { title: '简历筛选助手', keepAlive: true, icon: 'Document' },
         hidden: true,
       },
       {
@@ -150,6 +150,13 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         component: () => import('@/views/home/AI_hr/PerformanceEvaluation.vue'),
         name: 'PerformanceEvaluation',
         meta: { title: '绩效考核方案', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_hr/personnel-deployment',
+        component: () => import('@/views/home/AI_hr/PersonnelDeployment.vue'),
+        name: 'PersonnelDeployment',
+        meta: { title: '人员调派方案', keepAlive: true, icon: 'Document' },
         hidden: true,
       },
       {

@@ -22,14 +22,14 @@
 
     <!-- AI助手卡片列表 -->
     <div class="ai-cards-container">
-      <!-- 职位描述编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'recruitment'" @click="navigateToAssistant('job-description')">
+      <!-- 简历筛选助手 -->
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'recruitment'" @click="navigateToAssistant('resume-screening')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar1.png" alt="职位描述编写">
+          <img src="@/assets/images/avatars/avatar1.png" alt="简历筛选助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">职位描述编写</h3>
-          <p class="assistant-desc">快速生成专业的职位描述，包含岗位职责、任职要求等完整内容。</p>
+          <h3 class="assistant-name">简历筛选助手</h3>
+          <p class="assistant-desc">智能分析简历内容，快速匹配职位要求，提供专业的人才评估建议。</p>
           <div class="efficiency-stats">
             <span class="stat-item">最高省时比 <span class="highlight">96%</span></span>
             <span class="stat-item">提效 <span class="highlight">35倍</span></span>
@@ -78,6 +78,21 @@
           <div class="efficiency-stats">
             <span class="stat-item">最高省时比 <span class="highlight">95%</span></span>
             <span class="stat-item">提效 <span class="highlight">30倍</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 人员调派方案 -->
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'performance'" @click="navigateToAssistant('personnel-deployment')">
+        <div class="card-avatar">
+          <img src="@/assets/images/avatars/avatar5.png" alt="人员调派方案">
+        </div>
+        <div class="card-content">
+          <h3 class="assistant-name">人员调派方案</h3>
+          <p class="assistant-desc">智能生成人员调配建议，优化团队结构，提升组织效能。</p>
+          <div class="efficiency-stats">
+            <span class="stat-item">最高省时比 <span class="highlight">93%</span></span>
+            <span class="stat-item">提效 <span class="highlight">28倍</span></span>
           </div>
         </div>
       </div>
