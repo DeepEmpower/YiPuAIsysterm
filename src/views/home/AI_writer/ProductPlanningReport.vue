@@ -13,9 +13,33 @@
       <div class="action-area">
         <el-button type="primary" @click="generateReport" :disabled="!canGenerate">生成策划</el-button>
         <el-button @click="saveAsDraft" :disabled="!reportContent">保存草稿</el-button>
-        <el-button type="success" @click="exportReport" :disabled="!reportContent">导出策划</el-button>
+        <el-button type="success" @click="showExportDialog" :disabled="!reportContent">导出策划</el-button>
       </div>
     </div>
+
+    <!-- 导出格式选择弹窗 -->
+    <el-dialog
+      v-model="exportDialogVisible"
+      title="选择导出格式"
+      width="30%"
+      :close-on-click-modal="false"
+    >
+      <div class="export-options">
+        <el-radio-group v-model="exportFormat">
+          <el-radio label="word">Word文档 (.docx)</el-radio>
+          <el-radio label="pdf">PDF文档 (.pdf)</el-radio>
+          <el-radio label="markdown">Markdown文档 (.md)</el-radio>
+        </el-radio-group>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="exportDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleExport" :loading="exporting">
+            确认导出
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
 
     <!-- 主内容区域 - 左右两栏结构 -->
     <div class="content-wrapper">
@@ -55,20 +79,16 @@
             <el-form-item label="策划内容选项">
               <el-checkbox-group v-model="reportConfig.sections">
                 <div class="checkbox-row">
-                  <el-checkbox label="executive_summary">执行摘要</el-checkbox>
-                  <el-checkbox label="market_analysis">市场分析</el-checkbox>
+                  <el-checkbox label="strategic_positioning">战略定位</el-checkbox>
+                  <el-checkbox label="market_defense">市场攻防体系</el-checkbox>
                 </div>
                 <div class="checkbox-row">
-                  <el-checkbox label="product_features">产品功能</el-checkbox>
-                  <el-checkbox label="user_analysis">用户分析</el-checkbox>
+                  <el-checkbox label="technical_path">技术实现路径</el-checkbox>
+                  <el-checkbox label="business_validation">商业验证模型</el-checkbox>
                 </div>
                 <div class="checkbox-row">
-                  <el-checkbox label="competitor_analysis">竞品分析</el-checkbox>
-                  <el-checkbox label="marketing_strategy">营销策略</el-checkbox>
-                </div>
-                <div class="checkbox-row">
-                  <el-checkbox label="resource_planning">资源规划</el-checkbox>
-                  <el-checkbox label="risk_analysis">风险分析</el-checkbox>
+                  <el-checkbox label="risk_control">风险控制矩阵</el-checkbox>
+                  <el-checkbox label="tactical_execution">战术执行蓝图</el-checkbox>
                 </div>
               </el-checkbox-group>
             </el-form-item>
@@ -140,32 +160,20 @@
       
       <!-- 右侧栏：报告预览 -->
       <div class="right-column">
-        <div class="preview-section">
-          <div class="section-title">
-            <h3>策划预览</h3>
-            <div class="preview-actions" v-if="reportContent">
-              <el-button type="text" @click="copyReportContent">
-                <el-icon><DocumentCopy /></el-icon> 复制内容
-              </el-button>
+        <div class="preview-section" ref="previewRef">
+          <div class="preview-header">
+            <h2>策划预览</h2>
+            <div class="preview-actions">
+              <el-button type="primary" @click="copyReportContent" :icon="DocumentCopy">复制内容</el-button>
+              <el-button type="success" @click="exportReport" :icon="Download">导出</el-button>
             </div>
           </div>
           
           <div class="preview-content" v-if="reportContent">
-            <div class="report-title">{{ reportConfig.productName || '产品' }}策划方案</div>
-            <div class="report-meta">生成时间: {{ currentDateTime }}</div>
-            
-            <div class="report-body" v-html="reportContent"></div>
+            <div class="preview-section-content" v-html="formatContent(reportContent)"></div>
           </div>
-          
-          <div class="empty-preview" v-else>
-            <el-empty description="请配置并生成策划">
-              <template #image>
-                <img src="@/assets/images/report-placeholder.png" alt="空策划" style="height: 180px;">
-              </template>
-              <template #description>
-                <p>完成左侧配置后，点击"生成策划"按钮</p>
-              </template>
-            </el-empty>
+          <div v-else class="preview-empty">
+            <el-empty description="暂无内容" />
           </div>
         </div>
       </div>
@@ -173,250 +181,127 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
-import { DocumentCopy, Refresh, Delete, Back } from '@element-plus/icons-vue';
+import { DocumentCopy, Refresh, Delete, Back, Loading, Download } from '@element-plus/icons-vue';
+import { useProductPlanning } from '@/api/productPlanning';
+import { exportToWord } from '@/api/docExport';
 
 const router = useRouter();
 
+// 使用产品策划API
+const { state: planningState, generatePlanning: apiGeneratePlanning, stopGeneration } = useProductPlanning();
+
 // 报告配置
-const reportConfig = reactive({
+const reportConfig = ref({
   productName: '',
-  productType: '',
+  productType: 'software',
   positioning: '',
-  sections: ['executive_summary', 'market_analysis', 'product_features', 'competitor_analysis'],
+  sections: ['strategic_positioning', 'market_defense', 'technical_path', 'business_validation', 'risk_control', 'tactical_execution'],
   depth: 'standard',
   developmentTime: 6,
   additionalInfo: ''
 });
 
+// 章节选项
+const sectionOptions = [
+  { label: '战略定位', value: 'strategic_positioning' },
+  { label: '市场攻防体系', value: 'market_defense' },
+  { label: '技术实现路径', value: 'technical_path' },
+  { label: '商业验证模型', value: 'business_validation' },
+  { label: '风险控制矩阵', value: 'risk_control' },
+  { label: '战术执行蓝图', value: 'tactical_execution' }
+];
+
 // 报告内容
-const reportContent = ref('');
+const reportContent = computed(() => planningState.value.content);
 
-// 历史报告
-const historyReports = ref([]);
-const selectedHistoryIndex = ref(-1);
+// 是否正在生成报告
+const isGenerating = computed(() => planningState.value.isGenerating);
 
-// 计算当前时间
+// 当前日期时间
 const currentDateTime = computed(() => {
   const now = new Date();
-  return now.toLocaleString('zh-CN');
+  return now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 });
 
-// 判断是否可以生成报告
+// 是否可以生成报告
 const canGenerate = computed(() => {
-  return reportConfig.productName && reportConfig.productType;
+  return reportConfig.value.productName.trim() !== '' && 
+         reportConfig.value.positioning.trim() !== '' &&
+         !isGenerating.value;
 });
 
-// 页面加载时获取历史报告
-onMounted(() => {
-  loadHistoryReports();
-});
-
-// 返回AI文员团队页面
+// 返回上一页
 const goBack = () => {
   router.push('/home/AI_writer/AIWriter');
 };
 
 // 生成报告
-const generateReport = () => {
+const generateReport = async () => {
+  if (reportContent.value && !isGenerating.value) {
+    // 如果已有报告内容，询问是否重新生成
+    try {
+      await ElMessageBox.confirm('重新生成将覆盖当前报告内容，是否继续？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    } catch {
+      return; // 用户取消操作
+    }
+  }
+  
+  // 检查必填字段
   if (!canGenerate.value) {
-    ElMessage.warning('请至少填写产品名称和产品类型');
+    ElMessage.warning('请填写产品名称和产品定位');
     return;
   }
-
-  const loading = ElLoading.service({
-    lock: true,
-    text: '正在生成策划...',
-    background: 'rgba(0, 0, 0, 0.7)',
-  });
-
-  // 模拟生成报告的过程
-  setTimeout(() => {
-    // 根据配置生成相应的报告内容
-    let content = `<h2>1. 执行摘要</h2>
-      <p>本策划方案旨在详细阐述${reportConfig.productName}的产品定位、功能特性、市场分析和开发规划。通过深入的用户需求分析和竞品研究，我们提出了一套完整的产品开发和营销策略，预计在${reportConfig.developmentTime}个月内完成开发并推向市场。</p>
-      
-      <h2>2. 产品概述</h2>
-      <p>${reportConfig.productName}是一款${getProductTypeText()}，主要定位于${reportConfig.positioning || '满足用户特定需求的创新产品'}。</p>
-      
-      <h2>3. 市场分析</h2>
-      <p>当前市场环境对此类产品的需求呈现稳定增长态势。根据最新市场调研数据，预计未来3年内，此类产品市场规模将保持年均15%的增长率。目标用户主要集中在25-45岁的城市白领群体，对产品的便捷性和创新性有较高要求。</p>
-      
-      <h2>4. 用户分析</h2>
-      <p>目标用户画像：
-        <ul>
-          <li>年龄：25-45岁</li>
-          <li>职业：以企业白领、创意工作者为主</li>
-          <li>特点：注重效率，追求创新，愿意为高品质产品支付溢价</li>
-          <li>痛点：现有产品无法满足的特定需求，包括${generateRandomPainPoints()}</li>
-        </ul>
-      </p>
-      
-      <h2>5. 产品功能与特性</h2>
-      <p>核心功能：
-        <ul>
-          <li>功能一：高效的用户界面设计，简化操作流程</li>
-          <li>功能二：智能算法支持，提供个性化推荐</li>
-          <li>功能三：云端数据同步，确保多设备使用一致性</li>
-          <li>功能四：安全加密技术，保障用户数据安全</li>
-        </ul>
-      </p>
-      
-      <h2>6. 竞品分析</h2>
-      <table>
-        <tr>
-          <th>竞品名称</th>
-          <th>优势</th>
-          <th>劣势</th>
-          <th>市场份额</th>
-        </tr>
-        <tr>
-          <td>竞品A</td>
-          <td>用户基础大，品牌知名度高</td>
-          <td>功能单一，创新不足</td>
-          <td>35%</td>
-        </tr>
-        <tr>
-          <td>竞品B</td>
-          <td>技术领先，性能稳定</td>
-          <td>价格偏高，用户体验一般</td>
-          <td>25%</td>
-        </tr>
-        <tr>
-          <td>竞品C</td>
-          <td>价格优势，渠道铺设广</td>
-          <td>质量不稳定，售后服务差</td>
-          <td>20%</td>
-        </tr>
-      </table>`;
-
-    if (reportConfig.sections.includes('marketing_strategy')) {
-      content += `
-        <h2>7. 营销策略</h2>
-        <p>
-          <strong>品牌定位：</strong>定位为创新、高效、专业的行业领导者。<br>
-          <strong>推广渠道：</strong>
-          <ul>
-            <li>线上：社交媒体广告、KOL合作、内容营销</li>
-            <li>线下：行业展会、用户体验活动、媒体发布会</li>
-          </ul>
-          <strong>定价策略：</strong>采用价值导向定价，并提供不同层级的产品版本，满足不同用户需求。<br>
-          <strong>促销活动：</strong>首发折扣、会员专享、节日特惠等多种促销手段结合使用。
-        </p>`;
-    }
-
-    if (reportConfig.sections.includes('resource_planning')) {
-      content += `
-        <h2>8. 资源规划</h2>
-        <p>
-          <strong>研发团队：</strong>产品经理1名，UI/UX设计师2名，前端开发3名，后端开发4名，测试工程师2名。<br>
-          <strong>开发周期：</strong>预计${reportConfig.developmentTime}个月，分为需求分析、设计、开发、测试、发布五个阶段。<br>
-          <strong>预算规划：</strong>研发投入约占总预算的60%，营销推广占30%，运营维护占10%。<br>
-        </p>`;
-    }
-
-    if (reportConfig.sections.includes('risk_analysis')) {
-      content += `
-        <h2>9. 风险分析与应对</h2>
-        <p>
-          <strong>市场风险：</strong>市场需求变化快，竞争激烈。应对策略是加强市场调研，灵活调整产品策略。<br>
-          <strong>技术风险：</strong>技术实现难度大，可能面临延期。应对策略是合理规划开发周期，适当引入成熟技术框架。<br>
-          <strong>财务风险：</strong>前期投入大，回收周期长。应对策略是分阶段投入，及时评估阶段性成果。<br>
-          <strong>运营风险：</strong>用户获取成本高，留存率不稳定。应对策略是优化用户体验，增强产品粘性。<br>
-        </p>`;
-    }
-    
-    // 根据深度调整内容详细程度
-    if (reportConfig.depth === 'brief') {
-      // 简化内容
-      content = content.replace(/<ul>[\s\S]*?<\/ul>/g, '略');
-      content = content.replace(/<table>[\s\S]*?<\/table>/g, '<p>主要竞品包括竞品A、竞品B和竞品C，我们的产品在功能和用户体验方面具有明显优势。</p>');
-    } else if (reportConfig.depth === 'detailed') {
-      // 增加更详细的内容
-      content += `
-      <h2>10. 未来发展规划</h2>
-      <p>
-        <strong>短期目标（1年内）：</strong>完成产品开发并上线，获取初始用户群体，建立品牌影响力。<br>
-        <strong>中期目标（1-3年）：</strong>扩大市场份额，丰富产品线，优化用户体验，实现盈利。<br>
-        <strong>长期目标（3年以上）：</strong>成为行业领导者，建立完整的产品生态系统，探索国际市场。<br>
-      </p>
-      
-      <h2>11. 指标与评估</h2>
-      <p>
-        <strong>关键绩效指标：</strong>
-        <ul>
-          <li>用户增长率：月均增长不低于15%</li>
-          <li>用户留存率：30天留存率不低于40%</li>
-          <li>用户满意度：评分不低于4.5/5</li>
-          <li>转化率：免费用户转付费率不低于5%</li>
-        </ul>
-        <strong>评估方法：</strong>定期用户调研、数据分析、竞品对比、财务审计等。
-      </p>`;
-    }
-
-    // 加入补充信息
-    if (reportConfig.additionalInfo) {
-      content += `
-      <h2>附录: 补充信息</h2>
-      <p>${reportConfig.additionalInfo}</p>`;
-    }
-
-    reportContent.value = content;
-    loading.close();
-    
-    // 自动保存到历史记录
-    saveToHistory();
-    
-    ElMessage.success('策划生成成功！');
-  }, 2000);
-};
-
-// 保存报告到历史记录
-const saveToHistory = () => {
-  const newHistory = {
-    title: `${reportConfig.productName || '未命名产品'}策划方案`,
-    date: currentDateTime.value,
-    content: reportContent.value,
-    config: JSON.parse(JSON.stringify(reportConfig))
-  };
   
-  historyReports.value.unshift(newHistory);
-  // 保存到本地存储
-  localStorage.setItem('productPlanningHistory', JSON.stringify(historyReports.value));
-  ElMessage.success('已保存到历史记录');
+  // 调用API生成报告
+  apiGeneratePlanning({
+    productName: reportConfig.value.productName,
+    productType: reportConfig.value.productType,
+    productPosition: reportConfig.value.positioning
+  });
+  
+  // 滚动到预览区域
+  nextTick(() => {
+    scrollToPreview();
+  });
 };
 
-// 保存为草稿
+// 停止生成报告
+const handleStopGeneration = () => {
+  stopGeneration();
+  ElMessage.info('已停止生成报告');
+};
+
+// 保存草稿
 const saveAsDraft = () => {
   if (!reportContent.value) {
     ElMessage.warning('没有内容可保存');
     return;
   }
   
-  ElMessageBox.prompt('请输入草稿名称', '保存草稿', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    inputValue: `${reportConfig.productName || '未命名产品'}策划方案`,
-    inputPattern: /\S+/,
-    inputErrorMessage: '名称不能为空'
-  }).then(({ value }) => {
-    const newDraft = {
-      title: value,
-      date: currentDateTime.value,
-      content: reportContent.value,
-      config: JSON.parse(JSON.stringify(reportConfig)),
-      isDraft: true
-    };
-    
-    historyReports.value.unshift(newDraft);
-    localStorage.setItem('productPlanningHistory', JSON.stringify(historyReports.value));
-    ElMessage.success(`已保存草稿"${value}"`);
-  }).catch(() => {
-    // 用户取消
-  });
+  // 模拟草稿保存
+  const draft = {
+    title: reportConfig.value.productName,
+    content: reportContent.value,
+    date: new Date().toLocaleDateString()
+  };
+  
+  // 将草稿放到历史记录中
+  historyReports.value.unshift(draft);
+  ElMessage.success('草稿已保存');
 };
 
 // 导出报告
@@ -426,105 +311,165 @@ const exportReport = () => {
     return;
   }
   
-  ElMessage.success('策划已导出');
-  // 这里可以添加实际的导出逻辑，如转为PDF或Word文档
+  // 创建格式化的报告标题
+  const reportTitle = `${reportConfig.value.productName}产品策划方案`;
+  
+  // 显示导出选项
+  ElMessageBox.confirm(
+    '请选择导出格式',
+    '导出报告',
+    {
+      confirmButtonText: 'Word文档',
+      cancelButtonText: 'Markdown',
+      distinguishCancelAndClose: true,
+      type: 'info'
+    }
+  )
+  .then(() => {
+    // 导出Word文档
+    exportToWord(reportTitle, reportContent.value, reportTitle);
+    ElMessage.success('报告已导出为Word文档');
+  })
+  .catch((action) => {
+    if (action === 'cancel') {
+      // 导出Markdown
+      const today = new Date().toLocaleDateString();
+      const fullReport = `# ${reportTitle}\n\n生成日期: ${today}\n\n${reportContent.value}`;
+      
+      // 创建下载链接
+      const blob = new Blob([fullReport], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reportTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      ElMessage.success('报告已导出为Markdown文件');
+    }
+  });
 };
 
-// 复制报告内容
-const copyReportContent = () => {
-  // 创建一个不可见的文本区域
-  const textArea = document.createElement('textarea');
-  // 移除HTML标签
-  const plainText = reportContent.value.replace(/<[^>]*>/g, '');
-  textArea.value = plainText;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textArea);
-  
-  ElMessage.success('内容已复制到剪贴板');
-};
+// 历史报告
+const historyReports = ref([
+  { title: '示例报告-电商平台升级', date: '2023-12-15' },
+  { title: '示例报告-新产品开发计划', date: '2023-12-10' }
+]);
+
+// 选中的历史报告索引
+const selectedHistoryIndex = ref(-1);
 
 // 加载历史报告
 const loadHistoryReports = () => {
-  const savedHistory = localStorage.getItem('productPlanningHistory');
-  if (savedHistory) {
-    historyReports.value = JSON.parse(savedHistory);
-  }
+  // 模拟加载历史报告
+  ElMessage.success('历史报告已刷新');
 };
 
 // 选择历史报告
 const selectHistoryReport = (index) => {
   selectedHistoryIndex.value = index;
-  const selected = historyReports.value[index];
-  
-  // 恢复配置和内容
-  Object.assign(reportConfig, selected.config);
-  reportContent.value = selected.content;
-  
-  ElMessage.success(`已加载"${selected.title}"`);
+  // 模拟加载报告内容
+  planningState.value.content = '这是从服务器加载的历史报告内容示例。实际实现中，这里会加载真实的历史报告内容。';
 };
 
 // 删除历史报告
 const deleteHistoryReport = (index) => {
-  ElMessageBox.confirm('确定要删除这条历史记录吗？', '提示', {
+  ElMessageBox.confirm('确定要删除这份历史报告吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    historyReports.value.splice(index, 1);
-    localStorage.setItem('productPlanningHistory', JSON.stringify(historyReports.value));
-    
+    historyReports.value.splice(index, selectedHistoryIndex.value === index ? 1 : 1);
     if (selectedHistoryIndex.value === index) {
       selectedHistoryIndex.value = -1;
-      reportContent.value = '';
-    } else if (selectedHistoryIndex.value > index) {
-      selectedHistoryIndex.value--;
+      planningState.value.content = '';
     }
-    
-    ElMessage.success('已删除历史记录');
-  }).catch(() => {
-    // 用户取消
+    ElMessage.success('删除成功');
+  }).catch(() => {});
+};
+
+// 预览区域DOM引用
+const previewRef = ref(null);
+
+// 滚动到预览区域
+const scrollToPreview = () => {
+  if (previewRef.value) {
+    previewRef.value.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
+// 复制报告内容
+const copyReportContent = () => {
+  // 创建临时元素，移除HTML标签
+  const tempElement = document.createElement('div');
+  tempElement.innerHTML = reportContent.value;
+  const textContent = tempElement.textContent || tempElement.innerText || '';
+  
+  navigator.clipboard.writeText(textContent).then(() => {
+    ElMessage.success('报告内容已复制到剪贴板');
+  }).catch(err => {
+    console.error('复制失败:', err);
+    ElMessage.error('复制失败，请手动复制');
   });
 };
 
-// 获取产品类型文本
-const getProductTypeText = () => {
-  const typeMap = {
-    software: '软件应用',
-    hardware: '硬件设备',
-    consumer: '消费品',
-    service: '服务产品',
-    content: '内容产品',
-    other: '其他类型产品'
-  };
+// 格式化报告内容 - 增强版Markdown到HTML转换
+const formatContent = (content: string) => {
+  if (!content) return '';
   
-  return typeMap[reportConfig.productType] || '创新产品';
-};
-
-// 生成随机痛点（演示用）
-const generateRandomPainPoints = () => {
-  const painPoints = [
-    '操作复杂、学习成本高',
-    '功能单一、缺乏个性化',
-    '性能不稳定、卡顿严重',
-    '数据同步困难、协作效率低',
-    '价格过高、性价比不足'
-  ];
+  // 将Markdown格式转换为HTML
+  let formatted = content;
   
-  // 随机选择2-3个痛点
-  const count = Math.floor(Math.random() * 2) + 2;
-  const selected = [];
+  // 1. 处理标题
+  formatted = formatted.replace(/^# (.+?)$/gm, '<h1>$1</h1>');
+  formatted = formatted.replace(/^## (.+?)$/gm, '<h2>$1</h2>');
+  formatted = formatted.replace(/^### (.+?)$/gm, '<h3>$1</h3>');
+  formatted = formatted.replace(/^#### (.+?)$/gm, '<h4>$1</h4>');
   
-  while (selected.length < count) {
-    const index = Math.floor(Math.random() * painPoints.length);
-    if (!selected.includes(painPoints[index])) {
-      selected.push(painPoints[index]);
+  // 2. 处理列表
+  formatted = formatted.replace(/^- (.+?)$/gm, '<li>$1</li>');
+  formatted = formatted.replace(/^(\d+)\. (.+?)$/gm, '<li>$2</li>');
+  
+  // 3. 将连续的<li>元素包装在<ul>或<ol>中
+  let inList = false;
+  const lines = formatted.split('\n');
+  formatted = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith('<li>')) {
+      if (!inList) {
+        formatted += '<ul>';
+        inList = true;
+      }
+      formatted += line;
+    } else {
+      if (inList) {
+        formatted += '</ul>';
+        inList = false;
+      }
+      formatted += line + '\n';
     }
   }
+  if (inList) {
+    formatted += '</ul>';
+  }
   
-  return selected.join('、');
-};
+  // 4. 处理段落
+  formatted = formatted.replace(/^(?!<h[1-6]|<ul|<li|<\/ul>)(.+?)$/gm, '<p>$1</p>');
+  
+  // 5. 处理空行
+  formatted = formatted.replace(/\n\n+/g, '\n');
+  
+  return formatted;
+}
+
+// 组件挂载时执行
+onMounted(() => {
+  loadHistoryReports();
+});
 </script>
 
 <style scoped lang="scss">
@@ -606,15 +551,112 @@ const generateRandomPainPoints = () => {
   }
   
   .preview-section {
+    background: #fff;
+    border-radius: 8px;
     padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .preview-header {
     display: flex;
-    flex-direction: column;
-    height: 100%;
-    
-    .preview-content {
-      flex: 1;
-      overflow: auto;
-    }
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .preview-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+  }
+  
+  .preview-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .preview-content {
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  .preview-section-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+  }
+  
+  .preview-section-content :deep(h1) {
+    font-size: 24px;
+    margin: 20px 0 15px;
+    color: #1a1a1a;
+    border-bottom: 2px solid #409EFF;
+    padding-bottom: 10px;
+  }
+  
+  .preview-section-content :deep(h2) {
+    font-size: 20px;
+    margin: 18px 0 12px;
+    color: #2c3e50;
+  }
+  
+  .preview-section-content :deep(h3) {
+    font-size: 16px;
+    margin: 15px 0 10px;
+    color: #34495e;
+  }
+  
+  .preview-section-content :deep(p) {
+    margin: 10px 0;
+    text-align: justify;
+  }
+  
+  .preview-section-content :deep(ul) {
+    margin: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .preview-section-content :deep(li) {
+    margin: 5px 0;
+  }
+  
+  .preview-section-content :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  
+  .preview-section-content :deep(th),
+  .preview-section-content :deep(td) {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .preview-section-content :deep(th) {
+    background-color: #f5f7fa;
+    font-weight: bold;
+  }
+  
+  .preview-section-content :deep(strong) {
+    color: #409EFF;
+    font-weight: 600;
+  }
+  
+  .preview-empty {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    border-radius: 4px;
   }
   
   .history-section {
@@ -638,65 +680,6 @@ const generateRandomPainPoints = () => {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-    }
-  }
-  
-  .preview-content {
-    .report-title {
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    .report-meta {
-      text-align: center;
-      color: #909399;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    
-    .report-body {
-      padding: 0;
-      
-      h2 {
-        font-size: 18px;
-        margin-top: 25px;
-        margin-bottom: 15px;
-        color: #303133;
-        border-bottom: 1px solid #ebeef5;
-        padding-bottom: 8px;
-      }
-      
-      p {
-        margin: 10px 0;
-        line-height: 1.6;
-      }
-      
-      ul, ol {
-        padding-left: 20px;
-        margin: 10px 0;
-        
-        li {
-          margin-bottom: 5px;
-        }
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 15px 0;
-        
-        th, td {
-          border: 1px solid #dcdfe6;
-          padding: 8px 12px;
-          text-align: left;
-        }
-        
-        th {
-          background-color: #f5f7fa;
-        }
-      }
     }
   }
   
@@ -737,19 +720,6 @@ const generateRandomPainPoints = () => {
       justify-content: center;
       padding: 20px 0;
     }
-  }
-  
-  .empty-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-  }
-  
-  .checkbox-row {
-    margin-bottom: 10px;
-    display: flex;
-    gap: 20px;
   }
 }
 </style> 

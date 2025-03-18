@@ -53,8 +53,22 @@ function parseContentToDocElements(title: string, content: string) {
     })
   );
   
+  // 清理HTML标签
+  const cleanContent = content
+    .replace(/<h[1-6]>(.*?)<\/h[1-6]>/g, '$1\n') // 处理标题标签
+    .replace(/<p>(.*?)<\/p>/g, '$1\n') // 处理段落标签
+    .replace(/<ul>(.*?)<\/ul>/g, '$1\n') // 处理无序列表标签
+    .replace(/<ol>(.*?)<\/ol>/g, '$1\n') // 处理有序列表标签
+    .replace(/<li>(.*?)<\/li>/g, '• $1\n') // 处理列表项标签
+    .replace(/<br\s*\/?>/g, '\n') // 处理换行标签
+    .replace(/<strong>(.*?)<\/strong>/g, '$1') // 处理加粗标签
+    .replace(/<em>(.*?)<\/em>/g, '$1') // 处理斜体标签
+    .replace(/<[^>]*>/g, '') // 移除其他所有HTML标签
+    .replace(/\n\s*\n/g, '\n') // 合并多个空行
+    .trim();
+  
   // 分割内容为行进行处理
-  const lines = content.split('\n');
+  const lines = cleanContent.split('\n');
   
   let inList = false;
   let listItems = [];
@@ -73,17 +87,18 @@ function parseContentToDocElements(title: string, content: string) {
       continue;
     }
     
-    // 处理标题
-    if (line.startsWith('# ')) {
+    // 处理标题（以数字开头的行）
+    if (/^\d+\.\s/.test(line)) {
       if (inList) {
         elements.push(createList(listItems));
         listItems = [];
         inList = false;
       }
       
+      const titleText = line.replace(/^\d+\.\s*/, '');
       elements.push(
         new Paragraph({
-          text: line.substring(2),
+          text: titleText,
           heading: HeadingLevel.HEADING_1,
           spacing: {
             before: 300,
@@ -94,48 +109,8 @@ function parseContentToDocElements(title: string, content: string) {
       continue;
     }
     
-    if (line.startsWith('## ')) {
-      if (inList) {
-        elements.push(createList(listItems));
-        listItems = [];
-        inList = false;
-      }
-      
-      elements.push(
-        new Paragraph({
-          text: line.substring(3),
-          heading: HeadingLevel.HEADING_2,
-          spacing: {
-            before: 240,
-            after: 120
-          }
-        })
-      );
-      continue;
-    }
-    
-    if (line.startsWith('### ')) {
-      if (inList) {
-        elements.push(createList(listItems));
-        listItems = [];
-        inList = false;
-      }
-      
-      elements.push(
-        new Paragraph({
-          text: line.substring(4),
-          heading: HeadingLevel.HEADING_3,
-          spacing: {
-            before: 200,
-            after: 80
-          }
-        })
-      );
-      continue;
-    }
-    
-    // 处理列表项
-    if (line.startsWith('- ') || line.startsWith('* ')) {
+    // 处理列表项（以•开头的行）
+    if (line.startsWith('• ')) {
       inList = true;
       listItems.push(line.substring(2));
       continue;

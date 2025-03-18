@@ -137,27 +137,20 @@
       
       <!-- 右侧栏：报告预览 -->
       <div class="right-column">
-        <div class="preview-section">
-          <div class="section-title">
-            <h3>报告预览</h3>
-            <div class="preview-actions" v-if="isGenerating">
-              <el-button type="danger" size="small" @click="handleStopGeneration">停止生成</el-button>
+        <div class="preview-section" ref="previewRef">
+          <div class="preview-header">
+            <h2>报告预览</h2>
+            <div class="preview-actions">
+              <el-button type="primary" @click="copyReportContent" :icon="DocumentCopy">复制内容</el-button>
+              <el-button type="success" @click="exportReport" :icon="Download">导出</el-button>
             </div>
           </div>
           
-          <div class="preview-wrapper" ref="previewRef">
-            <el-empty description="报告预览区域" v-if="!reportContent && !isGenerating" />
-            
-            <div v-if="isGenerating && !reportContent" class="generating-indicator">
-              <el-icon class="is-loading"><Loading /></el-icon>
-              <span>正在生成报告，请稍候...</span>
-            </div>
-            
-            <div v-if="reportContent" class="preview-content">
-              <div class="report-title">{{ reportConfig.projectName || '项目名称' }}可行性研究报告</div>
-              <div class="report-meta">生成日期: {{ new Date().toLocaleDateString() }}</div>
-              <div class="report-body markdown-body" v-html="formatContent(reportContent)"></div>
-            </div>
+          <div class="preview-content" v-if="reportContent">
+            <div class="preview-section-content" v-html="formatContent(reportContent)"></div>
+          </div>
+          <div v-else class="preview-empty">
+            <el-empty description="暂无内容" />
           </div>
         </div>
       </div>
@@ -216,7 +209,7 @@ const canGenerate = computed(() => {
 
 // 返回上一页
 const goBack = () => {
-  router.push('/home/AI_writer');
+  router.push('/home/AI_writer/AIWriter');
 };
 
 // 生成报告
@@ -521,15 +514,112 @@ onMounted(() => {
   }
   
   .preview-section {
+    background: #fff;
+    border-radius: 8px;
     padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .preview-header {
     display: flex;
-    flex-direction: column;
-    height: 100%;
-    
-    .preview-content {
-      flex: 1;
-      overflow: auto;
-    }
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .preview-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+  }
+  
+  .preview-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .preview-content {
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  .preview-section-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+  }
+  
+  .preview-section-content :deep(h1) {
+    font-size: 24px;
+    margin: 20px 0 15px;
+    color: #1a1a1a;
+    border-bottom: 2px solid #409EFF;
+    padding-bottom: 10px;
+  }
+  
+  .preview-section-content :deep(h2) {
+    font-size: 20px;
+    margin: 18px 0 12px;
+    color: #2c3e50;
+  }
+  
+  .preview-section-content :deep(h3) {
+    font-size: 16px;
+    margin: 15px 0 10px;
+    color: #34495e;
+  }
+  
+  .preview-section-content :deep(p) {
+    margin: 10px 0;
+    text-align: justify;
+  }
+  
+  .preview-section-content :deep(ul) {
+    margin: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .preview-section-content :deep(li) {
+    margin: 5px 0;
+  }
+  
+  .preview-section-content :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  
+  .preview-section-content :deep(th),
+  .preview-section-content :deep(td) {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .preview-section-content :deep(th) {
+    background-color: #f5f7fa;
+    font-weight: bold;
+  }
+  
+  .preview-section-content :deep(strong) {
+    color: #409EFF;
+    font-weight: 600;
+  }
+  
+  .preview-empty {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    border-radius: 4px;
   }
   
   .history-section {
@@ -553,59 +643,6 @@ onMounted(() => {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-    }
-  }
-  
-  .preview-content {
-    .report-title {
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    .report-meta {
-      text-align: center;
-      color: #909399;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    
-    .report-body {
-      padding: 0;
-      
-      h1, h2, h3, h4, h5, h6 {
-        margin-top: 24px;
-        margin-bottom: 16px;
-        font-weight: 600;
-        line-height: 1.25;
-      }
-      
-      p {
-        margin: 10px 0;
-        line-height: 1.6;
-      }
-      
-      ul, ol {
-        padding-left: 2em;
-        margin: 10px 0;
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 15px 0;
-        
-        th, td {
-          border: 1px solid #dcdfe6;
-          padding: 8px 12px;
-          text-align: left;
-        }
-        
-        th {
-          background-color: #f5f7fa;
-        }
-      }
     }
   }
   
@@ -645,116 +682,6 @@ onMounted(() => {
       display: flex;
       justify-content: center;
       padding: 20px 0;
-    }
-  }
-  
-  .empty-preview {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-  }
-  
-  .checkbox-row {
-    margin-bottom: 10px;
-    display: flex;
-    gap: 20px;
-  }
-  
-  .generating-indicator {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 30px;
-    
-    .el-icon {
-      font-size: 24px;
-      margin-bottom: 15px;
-      color: #409EFF;
-    }
-    
-    span {
-      color: #606266;
-    }
-  }
-  
-  .preview-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .preview-wrapper {
-    height: 100%;
-    overflow-y: auto;
-    padding: 20px;
-  }
-  
-  .markdown-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    line-height: 1.6;
-    word-wrap: break-word;
-    
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 24px;
-      margin-bottom: 16px;
-      font-weight: 600;
-      line-height: 1.25;
-    }
-    
-    h1 {
-      font-size: 2em;
-      border-bottom: 1px solid #eaecef;
-      padding-bottom: 0.3em;
-    }
-    
-    h2 {
-      font-size: 1.5em;
-      border-bottom: 1px solid #eaecef;
-      padding-bottom: 0.3em;
-    }
-    
-    h3 {
-      font-size: 1.25em;
-    }
-    
-    p {
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-    
-    ul, ol {
-      padding-left: 2em;
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-    
-    table {
-      display: block;
-      width: 100%;
-      overflow: auto;
-      margin-top: 0;
-      margin-bottom: 16px;
-      border-spacing: 0;
-      border-collapse: collapse;
-      
-      tr {
-        background-color: #fff;
-        border-top: 1px solid #c6cbd1;
-      }
-      
-      th, td {
-        padding: 6px 13px;
-        border: 1px solid #dfe2e5;
-      }
-      
-      th {
-        font-weight: 600;
-      }
-      
-      tr:nth-child(2n) {
-        background-color: #f6f8fa;
-      }
     }
   }
 }
