@@ -91,12 +91,18 @@
           </div>
         </div>
         <div class="preview-content">
-          <div v-if="state.content" class="markdown-content" v-html="formattedContent"></div>
-          <div v-if="state.isGenerating" class="generating-indicator">
-            <el-icon class="is-loading"><Loading /></el-icon>
-            <span>正在生成内容...</span>
-          </div>
-          <el-empty v-if="!state.content && !state.isGenerating" description="暂无内容"></el-empty>
+          <template v-if="state.content">
+            <div class="markdown-content" v-html="formattedContent"></div>
+          </template>
+          <template v-else-if="state.isGenerating">
+            <div class="generating-indicator">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              <span>正在生成内容...</span>
+            </div>
+          </template>
+          <template v-else>
+            <el-empty description="暂无内容"></el-empty>
+          </template>
         </div>
       </div>
     </div>
