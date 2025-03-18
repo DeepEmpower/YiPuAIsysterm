@@ -5,6 +5,12 @@ import Layout from '@/layout/index.vue'
 // 定义扩展路由接口，添加可选的hidden属性
 interface extendRoute {
   hidden?: boolean // 定义是否在导航菜单中隐藏该路由
+  children?: Array<RouteRecordRaw & extendRoute>
+  meta?: {
+    title?: string
+    icon?: string
+    keepAlive?: boolean
+  }
 }
 // 分割线，下面导入模块化的路由配置
 // 导入工具类路由
@@ -113,10 +119,45 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
-        path: '/home/achieve', // AI人力路径
-        component: () => import('@/views/home/achieve.vue'), // 懒加载AI人力组件
+        path: '/home/AI_hr/AIHr.vue', // AI人力路径
+        component: () => import('@/views/home/AI_hr/AIHr.vue'), // 懒加载AI人力组件
         name: 'achieve', // 路由名称
         meta: { title: 'AI人力', icon: 'MenuIcon' }, // 设置标题和图标
+      },
+      {
+        path: '/home/AI_hr/job-description',
+        component: () => import('@/views/home/AI_hr/JobDescription.vue'),
+        name: 'JobDescription',
+        meta: { title: '职位描述编写', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_hr/interview-questions',
+        component: () => import('@/views/home/AI_hr/InterviewQuestions.vue'),
+        name: 'InterviewQuestions',
+        meta: { title: '面试问题生成', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_hr/training-plan',
+        component: () => import('@/views/home/AI_hr/TrainingPlan.vue'),
+        name: 'TrainingPlan',
+        meta: { title: '培训方案设计', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_hr/performance-evaluation',
+        component: () => import('@/views/home/AI_hr/PerformanceEvaluation.vue'),
+        name: 'PerformanceEvaluation',
+        meta: { title: '绩效考核方案', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_hr/custom',
+        component: () => import('@/views/home/AI_hr/CustomAssistant.vue'),
+        name: 'HRCustomAssistant',
+        meta: { title: '自定义AI助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
       },
       {
         path: '/home/examine', // 审稿路径
