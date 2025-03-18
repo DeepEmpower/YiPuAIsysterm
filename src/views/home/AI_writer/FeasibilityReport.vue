@@ -145,7 +145,7 @@
           <div class="section-title">
             <h3>报告预览</h3>
             <div class="preview-actions" v-if="isGenerating">
-              <el-button type="danger" size="small" @click="stopGenerating">停止生成</el-button>
+              <el-button type="danger" size="small" @click="handleStopGeneration">停止生成</el-button>
             </div>
           </div>
           
@@ -160,7 +160,7 @@
             <div v-if="reportContent" class="preview-content">
               <div class="report-title">{{ reportConfig.projectName || '项目名称' }}可行性研究报告</div>
               <div class="report-meta">生成日期: {{ new Date().toLocaleDateString() }}</div>
-              <div class="report-body" v-html="formatContent(reportContent)"></div>
+              <div class="report-body markdown-body" v-html="formatContent(reportContent)"></div>
             </div>
           </div>
         </div>
@@ -254,7 +254,7 @@ const generateReport = async () => {
 };
 
 // 停止生成报告
-const stopGenerating = () => {
+const handleStopGeneration = () => {
   stopGeneration();
   ElMessage.info('已停止生成报告');
 };
@@ -389,24 +389,53 @@ const copyReportContent = () => {
   });
 };
 
-// 格式化报告内容 - 简单的Markdown格式转HTML
+// 格式化报告内容 - 增强版Markdown到HTML转换
 const formatContent = (content: string) => {
   if (!content) return '';
   
-  // 替换标题 (## 标题)
-  let formatted = content.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  // 将Markdown格式转换为HTML
+  let formatted = content;
   
-  // 替换段落，添加间距
-  formatted = formatted.replace(/\n\n/g, '</p><p>');
+  // 1. 处理标题
+  formatted = formatted.replace(/^# (.+?)$/gm, '<h1>$1</h1>');
+  formatted = formatted.replace(/^## (.+?)$/gm, '<h2>$1</h2>');
+  formatted = formatted.replace(/^### (.+?)$/gm, '<h3>$1</h3>');
+  formatted = formatted.replace(/^#### (.+?)$/gm, '<h4>$1</h4>');
   
-  // 替换列表项 (- 列表项)
-  formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
-  formatted = formatted.replace(/<li>/g, '<ul><li>').replace(/<\/li>\n/g, '</li></ul>');
+  // 2. 处理列表
+  formatted = formatted.replace(/^- (.+?)$/gm, '<li>$1</li>');
+  formatted = formatted.replace(/^(\d+)\. (.+?)$/gm, '<li>$2</li>');
   
-  // 包装在段落标签中
-  if (!formatted.startsWith('<h2>') && !formatted.startsWith('<ul>')) {
-    formatted = '<p>' + formatted + '</p>';
+  // 3. 将连续的<li>元素包装在<ul>或<ol>中
+  let inList = false;
+  const lines = formatted.split('\n');
+  formatted = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith('<li>')) {
+      if (!inList) {
+        formatted += '<ul>';
+        inList = true;
+      }
+      formatted += line;
+    } else {
+      if (inList) {
+        formatted += '</ul>';
+        inList = false;
+      }
+      formatted += line + '\n';
+    }
   }
+  if (inList) {
+    formatted += '</ul>';
+  }
+  
+  // 4. 处理段落
+  formatted = formatted.replace(/^(?!<h[1-6]|<ul|<li|<\/ul>)(.+?)$/gm, '<p>$1</p>');
+  
+  // 5. 处理空行
+  formatted = formatted.replace(/\n\n+/g, '\n');
   
   return formatted;
 }
@@ -549,13 +578,11 @@ onMounted(() => {
     .report-body {
       padding: 0;
       
-      h2 {
-        font-size: 18px;
-        margin-top: 25px;
-        margin-bottom: 15px;
-        color: #303133;
-        border-bottom: 1px solid #ebeef5;
-        padding-bottom: 8px;
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 24px;
+        margin-bottom: 16px;
+        font-weight: 600;
+        line-height: 1.25;
       }
       
       p {
@@ -564,12 +591,8 @@ onMounted(() => {
       }
       
       ul, ol {
-        padding-left: 20px;
+        padding-left: 2em;
         margin: 10px 0;
-        
-        li {
-          margin-bottom: 5px;
-        }
       }
       
       table {
@@ -669,6 +692,74 @@ onMounted(() => {
     height: 100%;
     overflow-y: auto;
     padding: 20px;
+  }
+  
+  .markdown-body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    word-wrap: break-word;
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    
+    h1 {
+      font-size: 2em;
+      border-bottom: 1px solid #eaecef;
+      padding-bottom: 0.3em;
+    }
+    
+    h2 {
+      font-size: 1.5em;
+      border-bottom: 1px solid #eaecef;
+      padding-bottom: 0.3em;
+    }
+    
+    h3 {
+      font-size: 1.25em;
+    }
+    
+    p {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    
+    ul, ol {
+      padding-left: 2em;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    
+    table {
+      display: block;
+      width: 100%;
+      overflow: auto;
+      margin-top: 0;
+      margin-bottom: 16px;
+      border-spacing: 0;
+      border-collapse: collapse;
+      
+      tr {
+        background-color: #fff;
+        border-top: 1px solid #c6cbd1;
+      }
+      
+      th, td {
+        padding: 6px 13px;
+        border: 1px solid #dfe2e5;
+      }
+      
+      th {
+        font-weight: 600;
+      }
+      
+      tr:nth-child(2n) {
+        background-color: #f6f8fa;
+      }
+    }
   }
 }
 </style> 

@@ -40,27 +40,22 @@ export function useFeasibilityReport() {
     controller = new AbortController();
     
     try {
-      // 构建提示内容
-      const prompt = buildPrompt(config);
+      // 构建用户查询内容
+      const query = buildQuery(config);
       
-      // 发送请求
-      const response = await fetch('/api/chat/completions', {
+      // 发送请求到Dify API
+      const response = await fetch('/dify-api/v1/chat-messages', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer app-INFFV7bmzlWGFiQBq90ol4aF'
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: "system",
-              content: "你是一位专业的可行性研究报告撰写专家。请根据用户提供的信息，生成专业、详细的可行性研究报告。"
-            },
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          stream: true  // 启用流式响应
+          inputs: {},
+          query: query,
+          response_mode: "streaming",
+          conversation_id: "",
+          user: "user-" + Date.now()  // 生成唯一用户ID
         }),
         signal: controller.signal  // 传递AbortSignal
       });
@@ -116,23 +111,51 @@ export function useFeasibilityReport() {
   
   // 处理流式数据块
   const processStreamChunk = (chunk: string) => {
-    // 解析数据块，通常API会返回以data:开头的JSON行
+    // 分割成行并过滤空行
     const lines = chunk.split('\n').filter(line => line.trim());
     
     for (const line of lines) {
       try {
+        // 检查是否是以 "data: " 开头
         if (line.startsWith('data: ')) {
           const jsonStr = line.substring(6);
           
-          // 处理流结束标记
-          if (jsonStr === '[DONE]') continue;
+          // 跳过特殊的流结束标记
+          if (jsonStr === '[DONE]') {
+            console.log('流结束');
+            continue;
+          }
           
+          // 解析JSON数据
           const data = JSON.parse(jsonStr);
           
-          // 处理内容增量
-          if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
-            state.value.content += data.choices[0].delta.content;
+          // 处理消息事件
+          if (data.event === 'message') {
+            if (data.answer) {
+              state.value.content += data.answer;
+            }
+          } 
+          // 处理聊天消息事件
+          else if (data.event === 'agent_message') {
+            if (data.message && data.message.content) {
+              state.value.content += data.message.content;
+            }
           }
+          // 处理错误事件
+          else if (data.event === 'error') {
+            state.value.error = data.message || '生成过程中出现错误';
+            console.error('API错误:', data);
+          }
+          // 处理完成事件
+          else if (data.event === 'completed') {
+            console.log('生成完成');
+          }
+          // 记录其他事件类型以便调试
+          else {
+            console.log('其他事件类型:', data.event);
+          }
+        } else {
+          console.log('非数据行:', line);
         }
       } catch (e) {
         console.error('解析数据块失败:', e, '行内容:', line);
@@ -140,8 +163,8 @@ export function useFeasibilityReport() {
     }
   };
   
-  // 构建提示内容
-  const buildPrompt = (config: ReportConfig): string => {
+  // 构建查询内容
+  const buildQuery = (config: ReportConfig): string => {
     // 翻译节段名称
     const translateSection = (section: string): string => {
       const translations: Record<string, string> = {
@@ -175,17 +198,13 @@ export function useFeasibilityReport() {
       'other': '其他类型'
     };
     
-    return `请帮我撰写一份项目可行性研究报告，具体信息如下：
-    
-项目名称：${config.projectName}
+    return `项目名称：${config.projectName}
 项目类型：${projectTypeMap[config.projectType] || config.projectType}
 项目背景：${config.background}
 报告深度：${depthMap[config.depth] || config.depth}
 预算范围：${config.budget[0]}-${config.budget[1]}万元
 需要包含的章节：${config.sections.map(section => translateSection(section)).join('、')}
-${config.additionalInfo ? `补充信息：${config.additionalInfo}` : ''}
-
-请按照标准可行性研究报告格式进行编写，使用Markdown格式，包含适当的标题和小标题。报告内容应专业、详实，符合项目特点。`;
+${config.additionalInfo ? `补充信息：${config.additionalInfo}` : ''}`;
   };
   
   return {

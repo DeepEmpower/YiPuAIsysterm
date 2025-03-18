@@ -118,6 +118,11 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
           target: 'http://115.190.30.196:2000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/meeting-api/, '')
+        },
+        '/dify-api': {
+          target: 'http://115.190.30.196:2001',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/dify-api/, '')
         }
       },
     },
