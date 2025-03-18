@@ -49,13 +49,18 @@
           <el-form-item label="人员档案" required>
             <el-upload
               class="upload-section"
-              :action="uploadUrl"
-              :headers="uploadHeaders"
+              action="/dify-api/v1/files/upload"
+              :headers="{
+                Authorization: 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B'
+              }"
+              :data="{
+                user: 'abc-123'
+              }"
               :on-success="handleUploadSuccess"
               :on-error="handleUploadError"
               :before-upload="handleBeforeUpload"
               :on-exceed="handleExceed"
-              :file-list="fileList"
+              :file-list="config.files"
               multiple
               :limit="5"
               accept=".pdf,.doc,.docx"
@@ -172,16 +177,16 @@ const handleBeforeUpload = (file: File) => {
 }
 
 // 上传成功回调
-const handleUploadSuccess = (response: any, file: any) => {
+const handleUploadSuccess = (response: any, file: any, fileList: any[]) => {
+  console.log('文件上传成功:', response)
   ElMessage.success(`${file.name} 上传成功`)
-  config.value.fileIds = config.value.fileIds || []
-  config.value.fileIds.push(response.file_id)
+  config.value.files = fileList
 }
 
 // 上传失败回调
 const handleUploadError = (error: any, file: any) => {
-  ElMessage.error(`${file.name} 上传失败`)
   console.error('文件上传失败:', error)
+  ElMessage.error(`${file.name} 上传失败`)
 }
 
 // 超出数量限制
@@ -217,7 +222,7 @@ const formattedContent = computed(() => {
 
 // 生成方案
 const handleGenerate = async () => {
-  if (!config.value.department || !config.value.businessNeeds || !config.value.fileIds?.length) {
+  if (!config.value.department || !config.value.businessNeeds || !config.value.files?.length) {
     ElMessage.warning('请填写必要信息并上传人员档案')
     return
   }
@@ -243,7 +248,7 @@ const loadHistory = (item: any) => {
     department: item.title.replace('人员调派方案', ''),
     businessNeeds: '',
     additionalInfo: '',
-    fileIds: []
+    files: []
   }
   state.value.content = item.content
 }

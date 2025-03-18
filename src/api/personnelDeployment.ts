@@ -1,11 +1,16 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
 
-// 定义状态接口
+export interface PersonnelDeploymentConfig {
+  department: string
+  businessNeeds: string
+  additionalInfo: string
+  files: any[]
+}
+
 interface PersonnelDeploymentState {
-  isGenerating: boolean
   content: string
+  isGenerating: boolean
   history: Array<{
     id: string
     title: string
@@ -14,120 +19,160 @@ interface PersonnelDeploymentState {
   }>
 }
 
-// 定义配置接口
-interface PersonnelDeploymentConfig {
-  department: string
-  businessNeeds: string
-  additionalInfo: string
-  fileIds: string[]
-}
-
-// 创建状态
-const state = ref<PersonnelDeploymentState>({
-  isGenerating: false,
-  content: '',
-  history: []
-})
-
-// 创建配置
-const config = ref<PersonnelDeploymentConfig>({
-  department: '',
-  businessNeeds: '',
-  additionalInfo: '',
-  fileIds: []
-})
-
-// 构建查询
-const buildQuery = (config: PersonnelDeploymentConfig): string => {
-  const query = `请根据以下信息生成一份详细的人员调派方案：
-
-部门：${config.department}
-业务需求：${config.businessNeeds}
-${config.additionalInfo ? `补充信息：${config.additionalInfo}` : ''}
-
-请生成一份完整的人员调派方案，包含以下内容：
-1. 现状分析
-2. 需求分析
-3. 人员匹配
-4. 调派计划
-5. 培训安排
-6. 风险控制
-7. 效果评估
-
-请确保方案具有可操作性和实用性。`
-  return query
-}
-
-// 生成人员调派方案
-export const generatePersonnelDeployment = async (deploymentConfig: PersonnelDeploymentConfig) => {
-  if (state.value.isGenerating) {
-    ElMessage.warning('正在生成中，请稍候...')
-    return
-  }
-
-  if (!deploymentConfig.department || !deploymentConfig.businessNeeds) {
-    ElMessage.warning('请填写必要信息')
-    return
-  }
-
-  state.value.isGenerating = true
-  state.value.content = ''
-
+// 上传文件到服务器并获取文件ID
+const uploadFile = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file, file.name)
+  formData.append('user', 'abc-125')
+  
   try {
-    const query = buildQuery(deploymentConfig)
-    const response = await axios.post(
-      'http://115.190.30.196:2001/v1/chat-messages',
-      {
-        query,
-        user: 'abc-123',
-        response_mode: 'streaming',
-        conversation_id: '',
+    const response = await fetch('/api/v1/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B'
       },
-      {
-        headers: {
-          'Authorization': 'Bearer app-X7YkTKQgqHD0KcZmIVFCRDeK',
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+      body: formData
+    })
 
-    if (response.data && response.data.answer) {
-      state.value.content = response.data.answer
-      
-      // 添加到历史记录
-      state.value.history.unshift({
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('文件上传失败:', errorData)
+      throw new Error(errorData.message || '文件上传失败')
+    }
+
+    const result = await response.json()
+    console.log('文件上传结果:', result)
+    return result.id
+  } catch (error) {
+    console.error('文件上传失败:', error)
+    throw error
+  }
+}
+
+export function usePersonnelDeployment() {
+  const state = ref<PersonnelDeploymentState>({
+    content: '',
+    isGenerating: false,
+    history: JSON.parse(localStorage.getItem('personnelDeploymentHistory') || '[]')
+  })
+
+  const config = ref<PersonnelDeploymentConfig>({
+    department: '',
+    businessNeeds: '',
+    additionalInfo: '',
+    files: []
+  })
+
+  // 生成调派方案
+  const generatePersonnelDeployment = async (deploymentConfig: PersonnelDeploymentConfig) => {
+    if (!deploymentConfig.department || !deploymentConfig.businessNeeds || !deploymentConfig.files.length) {
+      ElMessage.warning('请填写必要信息并上传人员档案')
+      return
+    }
+
+    try {
+      state.value.isGenerating = true
+      state.value.content = ''
+
+      // 先上传所有文件
+      const uploadPromises = deploymentConfig.files.map(file => uploadFile(file.raw))
+      const fileIds = await Promise.all(uploadPromises)
+      console.log('上传的文件IDs:', fileIds)
+
+      // 构建请求数据
+      const requestData = {
+        inputs: {
+          x_list: fileIds.map(id => ({
+            type: "document",
+            transfer_method: "local_file",
+            upload_file_id: id
+          }))
+        },
+        query: deploymentConfig.businessNeeds,
+        response_mode: "streaming",
+        conversation_id: "",
+        user: "abc-125"
+      }
+
+      console.log('发送的请求数据:', requestData)
+
+      // 发送请求
+      const response = await fetch('/api/v1/chat-messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API请求失败:', errorData)
+        throw new Error(errorData.message || 'API请求失败')
+      }
+
+      // 处理流式响应
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let content = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          buffer += chunk
+
+          // 处理 SSE 格式的数据
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || '' // 保留最后一个不完整的行
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6) // 移除 'data: ' 前缀
+                const data = JSON.parse(jsonStr)
+                console.log('Received SSE message:', data)
+                
+                if (data.answer) {
+                  content += data.answer
+                  state.value.content = content
+                }
+              } catch (e) {
+                console.error('Error parsing SSE message:', e)
+              }
+            }
+          }
+        }
+      }
+
+      // 检查是否生成了内容
+      if (!content) {
+        throw new Error('未能生成内容，请重试')
+      }
+
+      // 保存到历史记录
+      const historyItem = {
         id: Date.now().toString(),
         title: `${deploymentConfig.department}人员调派方案`,
-        content: response.data.answer,
+        content: content,
         timestamp: new Date().toLocaleString()
-      })
-      
-      // 保存到本地存储
+      }
+      state.value.history.unshift(historyItem)
       localStorage.setItem('personnelDeploymentHistory', JSON.stringify(state.value.history))
-    }
-  } catch (error) {
-    console.error('生成人员调派方案失败:', error)
-    ElMessage.error('生成失败，请重试')
-  } finally {
-    state.value.isGenerating = false
-  }
-}
 
-// 从本地存储加载历史记录
-const loadHistoryFromStorage = () => {
-  const saved = localStorage.getItem('personnelDeploymentHistory')
-  if (saved) {
-    try {
-      state.value.history = JSON.parse(saved)
-    } catch (e) {
-      console.error('Failed to parse history from storage', e)
+      ElMessage.success('生成成功')
+    } catch (error) {
+      console.error('生成调派方案失败:', error)
+      ElMessage.error(error instanceof Error ? error.message : '生成失败，请重试')
+    } finally {
+      state.value.isGenerating = false
     }
   }
-}
 
-// 导出状态和配置
-export const usePersonnelDeployment = () => {
-  loadHistoryFromStorage()
   return {
     state,
     config,

@@ -55,7 +55,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
     // 配置别名
     resolve: {
       alias: {
-        '@': resolve('src'),
+        '@': path.resolve(__dirname, 'src'),
         static: resolve('public/static'),
       },
       // 忽略后缀名的配置选项, 添加 .vue 选项时要记得原本默认忽略的选项也要手动写入
@@ -71,17 +71,11 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       cors: true,
       // 代理跨域（模拟示例）
       proxy: {
-        "/api": {
-          target: process.env.VITE_API_BASE_URL,
+        '/api': {
+          target: 'http://115.190.30.196:2001',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
-          configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq, req, res) => {
-              proxyReq.setHeader('Access-Control-Allow-Origin', '*');
-              proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-              proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-            });
-          }
+          secure: false
         },
         "/img": {
           target: "https://dashscope.aliyuncs.com", // easymock
