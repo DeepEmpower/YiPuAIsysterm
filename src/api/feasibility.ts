@@ -126,8 +126,15 @@ export function useFeasibilityReport() {
             continue;
           }
           
-          // 解析JSON数据
-          const data = JSON.parse(jsonStr);
+          // 安全解析JSON，处理可能的截断数据
+          let data;
+          try {
+            // 解析JSON数据
+            data = JSON.parse(jsonStr);
+          } catch (jsonError) {
+            console.warn('JSON解析失败，可能是不完整的数据块:', jsonError);
+            continue; // 跳过这个不完整的数据块
+          }
           
           // 处理消息事件
           if (data.event === 'message') {
@@ -141,6 +148,10 @@ export function useFeasibilityReport() {
               state.value.content += data.message.content;
             }
           }
+          // 处理文本事件 (用于兼容其他可能的响应格式)
+          else if (data.event === 'text' && data.text) {
+            state.value.content += data.text;
+          }
           // 处理错误事件
           else if (data.event === 'error') {
             state.value.error = data.message || '生成过程中出现错误';
@@ -153,6 +164,14 @@ export function useFeasibilityReport() {
           // 记录其他事件类型以便调试
           else {
             console.log('其他事件类型:', data.event);
+            // 尝试从其他可能的字段中提取内容
+            if (data.content) {
+              state.value.content += data.content;
+            } else if (data.text) {
+              state.value.content += data.text;
+            } else if (data.message && typeof data.message === 'string') {
+              state.value.content += data.message;
+            }
           }
         } else {
           console.log('非数据行:', line);
