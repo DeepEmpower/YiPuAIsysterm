@@ -388,18 +388,19 @@ const searchTableByName = async () => {
     // 清空之前的搜索结果
     customTables.splice(0, customTables.length)
     
-    // 添加新的搜索结果
-    searchResults.forEach(table => {
+    // 添加新的搜索结果，使用用户输入的中文名称
+    if (searchResults && searchResults.length > 0) {
+      // 只取第一个结果，使用用户输入的名称
       customTables.push({
-        id: table.id,
-        name: table.name,
+        id: searchResults[0].id,
+        name: customTableName.value,  // 使用用户输入的中文名称
         selected: false
       })
-    })
 
-    // 更新搜索结果消息
-    if (searchResults.length > 0) {
-      searchResultMessage.value = `找到 ${searchResults.length} 个匹配的报表`
+      // 更新搜索结果消息
+      searchResultMessage.value = '已找到匹配的报表'
+      // 清空输入框
+      customTableName.value = ''
     } else {
       searchResultMessage.value = '未找到匹配的报表'
     }
