@@ -72,9 +72,24 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       // 代理跨域（模拟示例）
       proxy: {
         '/api': {
-          target: 'http://115.190.30.196:2004',
+          target: 'http://115.190.30.196:2003',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
+          secure: false,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              if (req.method === 'OPTIONS') {
+                proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+                proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+                proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+              }
+            });
+          }
+        },
+        '/ai': {
+          target: 'http://115.190.30.196:2004',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ai/, ''),
           secure: false,
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {

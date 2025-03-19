@@ -115,7 +115,7 @@
                 <!-- 右侧: 用户自定义表格 -->
                 <div class="table-column custom-tables">
                   <div class="column-title">
-                    <el-icon><User /></el-icon> 用户自定义表格
+                    <el-icon><User /></el-icon> 用户自定义报表
                   </div>
                   <div class="table-items">
                     <div 
@@ -134,11 +134,11 @@
               <!-- 自定义和搜索 -->
               <div class="action-row">
                 <div class="input-label smaller">
-                  <el-icon><Plus /></el-icon> 查找自定义表格
+                  <el-icon><Plus /></el-icon> 查找自定义报表
                 </div>
                 <el-input 
                   v-model="customTableName"
-                  placeholder="输入表名关键词进行查找"
+                  placeholder="输入报表名称关键词进行查找"
                   class="custom-input"
                   @keyup.enter="searchTableByName"
                   prefix-icon="Search"
@@ -210,6 +210,7 @@ import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus
 import { ElMessage, ElLoading } from 'element-plus';
 import { useReportRecommendation } from '@/api/reportRecommendation';
 import { useRouter } from 'vue-router';
+import { useCustomTableSearch, type CustomTable } from '@/api/customTableSearch'
 
 // 修正引入路径
 import FinancialReport from '@/views/management/report/components/FinancialReport.vue';
@@ -295,6 +296,7 @@ const toggleTableSelection = (table) => {
 
 // 在setup中添加
 const { state: recommendationState, getRecommendedReports } = useReportRecommendation();
+const { state: searchState, searchCustomTables } = useCustomTableSearch()
 
 // 修改handleInputSearch函数
 const handleInputSearch = async () => {
@@ -330,9 +332,6 @@ const handleInputSearch = async () => {
         // 更新搜索结果消息
         searchResultMessage.value = `已找到 ${recommendedReports.length} 个推荐报表`;
         
-        // 清空输入框
-        tableSearchInput.value = '';
-        
         loading.close();
       } catch (error) {
         console.error('获取推荐报表失败:', error);
@@ -343,52 +342,50 @@ const handleInputSearch = async () => {
   }
 };
 
-// 根据表名搜索表格
-const searchTableByName = () => {
-  // 清除搜索结果消息
-  searchResultMessage.value = '';
-  
-  if (customTableName.value) {
-    const tableName = customTableName.value.trim();
-    if (tableName) {
-      // 模拟查找自定义表格的过程
-      const loading = ElLoading.service({
-        lock: true,
-        text: '正在查找相关表格...',
-        background: 'rgba(255, 255, 255, 0.7)'
-      });
-      
-      // 模拟网络延迟
-      setTimeout(() => {
-        loading.close();
-        
-        // 随机决定是否找到表格（实际应用中会根据API结果决定）
-        const foundRelatedTables = Math.random() > 0.3; // 70%概率找到相关表格
-        
-        if (foundRelatedTables) {
-          // 模拟找到的相关表格
-          const searchResults = [
-            { id: Date.now(), name: tableName, selected: false },
-            { id: Date.now() + 1, name: `${tableName}_明细`, selected: false }
-          ];
-          
-          // 添加到自定义表格列表
-          searchResults.forEach(table => {
-            customTables.push(table);
-          });
-          
-          searchResultMessage.value = `已找到 ${searchResults.length} 个相关自定义表格`;
-        } else {
-          // 没有找到相关表格
-          searchResultMessage.value = `未找到与"${tableName}"相关的自定义表格，请尝试其他关键词`;
-        }
-        
-        // 清空输入框
-        customTableName.value = '';
-      }, 1000);
-    }
+// 修改searchTableByName函数
+const searchTableByName = async () => {
+  if (!customTableName.value) {
+    ElMessage.warning('请输入要查找的报表名称')
+    return
   }
-};
+
+  try {
+    // 显示加载状态
+    const loading = ElLoading.service({
+      lock: true,
+      text: '正在搜索自定义报表...',
+      background: 'rgba(255, 255, 255, 0.7)'
+    })
+
+    // 调用API搜索自定义报表
+    const searchResults = await searchCustomTables(customTableName.value)
+    
+    // 清空之前的搜索结果
+    customTables.splice(0, customTables.length)
+    
+    // 添加新的搜索结果
+    searchResults.forEach(table => {
+      customTables.push({
+        id: table.id,
+        name: table.name,
+        selected: false
+      })
+    })
+
+    // 更新搜索结果消息
+    if (searchResults.length > 0) {
+      searchResultMessage.value = `找到 ${searchResults.length} 个匹配的报表`
+    } else {
+      searchResultMessage.value = '未找到匹配的报表'
+    }
+
+    loading.close()
+  } catch (error) {
+    console.error('搜索自定义报表失败:', error)
+    ElMessage.error('搜索失败，请重试')
+    searchResultMessage.value = '搜索失败，请重试'
+  }
+}
 
 // 获取所有选中的表格
 const getSelectedTables = () => {
