@@ -173,11 +173,60 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         meta: { title: '审稿', keepAlive: true, icon: 'FolderChecked' }, // 设置标题、缓存和图标
       }, 
       {
-        path: '/home/AI_customer', // AI客服路径
-        component: () => import('@/views/home/AI_customer.vue'), // 懒加载AI客服组件
-        name: 'creativeDrawing', // 路由名称
-        meta: { title: 'AI客服', keepAlive: true, icon: 'SetUp' }, // 设置标题、缓存和图标
-      }, 
+        path: '/home/AI_service/AIService.vue', // AI客服路径
+        component: () => import('@/views/home/AI_service/AIService.vue'), // 懒加载AI客服组件
+        name: 'AIService',
+        meta: { title: 'AI客服', keepAlive: true, icon: 'Service' },
+      },
+      {
+        path: '/home/AI_service/smart-qa',
+        component: () => import('@/views/home/AI_service/smart-qa.vue'),
+        name: 'SmartQA',
+        meta: { title: '智能问答助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/after-sales',
+        component: () => import('@/views/home/AI_service/after-sales.vue'),
+        name: 'AfterSales',
+        meta: { title: '售后服务助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/complaint-handling',
+        component: () => import('@/views/home/AI_service/complaint-handling.vue'),
+        name: 'ComplaintHandling',
+        meta: { title: '投诉处理助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/customer-analysis',
+        component: () => import('@/views/home/AI_service/customer-analysis.vue'),
+        name: 'CustomerAnalysis',
+        meta: { title: '客户分析助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/auto-followup',
+        component: () => import('@/views/home/AI_service/auto-followup.vue'),
+        name: 'AutoFollowup',
+        meta: { title: '自动回访助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/product-service',
+        component: () => import('@/views/home/AI_service/product-service.vue'),
+        name: 'ProductService',
+        meta: { title: '产品客服助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/custom-assistant',
+        component: () => import('@/views/home/AI_service/custom-assistant.vue'),
+        name: 'CustomAssistant',
+        meta: { title: '自定义助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
       {
         path: '/home/voice', // 语音生成路径
         component: () => import('@/views/home/voice.vue'), // 懒加载语音生成组件

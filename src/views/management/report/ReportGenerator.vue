@@ -230,15 +230,8 @@ import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus
 import { ElMessage, ElLoading } from 'element-plus';
 import { useReportRecommendation } from '@/api/reportRecommendation';
 import { useRouter } from 'vue-router';
-import { useCustomTableSearch, type CustomTable } from '@/api/customTableSearch'
+import { useCustomTableSearch } from '@/api/customTableSearch'
 import { useReportGeneration } from '@/api/reportGeneration'
-
-// 修正引入路径
-import FinancialReport from '@/views/management/report/components/FinancialReport.vue';
-import SalesReport from '@/views/management/report/components/SalesReport.vue';
-import HRReport from '@/views/management/report/components/HRReport.vue';
-import ProductionReport from '@/views/management/report/components/ProductionReport.vue';
-import CustomerReport from '@/views/management/report/components/CustomerReport.vue';
 
 const router = useRouter();
 
@@ -261,18 +254,6 @@ const reportData = ref(null);
 
 // 在setup中添加
 const previewContent = ref(null)
-
-// 根据报表类型选择对应的组件
-const currentReportComponent = computed(() => {
-  switch (reportConfig.value.type) {
-    case 'financial': return FinancialReport;
-    case 'sales': return SalesReport;
-    case 'hr': return HRReport;
-    case 'production': return ProductionReport;
-    case 'customer': return CustomerReport;
-    default: return FinancialReport;
-  }
-});
 
 // 表格搜索相关变量
 const tableSearchInput = ref('');
