@@ -9,8 +9,12 @@
         <span class="page-title">报表生成器</span>
       </div>
       <div class="action-area">
-        <el-button type="primary" @click="generateReport" :disabled="!canGenerate">
-          <el-icon><RefreshRight /></el-icon> 生成报表
+        <el-button 
+          type="primary" 
+          :loading="generationState.isGenerating"
+          @click="handleGenerateReport"
+        >
+          生成报表
         </el-button>
         <el-button @click="exportReport" :disabled="!reportGenerated">
           <el-icon><Download /></el-icon> 导出报表
@@ -211,6 +215,7 @@ import { ElMessage, ElLoading } from 'element-plus';
 import { useReportRecommendation } from '@/api/reportRecommendation';
 import { useRouter } from 'vue-router';
 import { useCustomTableSearch, type CustomTable } from '@/api/customTableSearch'
+import { useReportGeneration } from '@/api/reportGeneration'
 
 // 修正引入路径
 import FinancialReport from '@/views/management/report/components/FinancialReport.vue';
@@ -237,6 +242,9 @@ const reportGenerated = ref(false);
 
 // 报表数据
 const reportData = ref(null);
+
+// 在setup中添加
+const previewContent = ref(null)
 
 // 根据报表类型选择对应的组件
 const currentReportComponent = computed(() => {
@@ -297,6 +305,7 @@ const toggleTableSelection = (table) => {
 // 在setup中添加
 const { state: recommendationState, getRecommendedReports } = useReportRecommendation();
 const { state: searchState, searchCustomTables } = useCustomTableSearch()
+const { state: generationState, generateReport } = useReportGeneration()
 
 // 修改handleInputSearch函数
 const handleInputSearch = async () => {
@@ -408,40 +417,56 @@ const getSelectedTables = () => {
   return selectedTables;
 };
 
-// 生成报表
-const generateReport = async () => {
-  if (!reportConfig.value.dateRange || reportConfig.value.dateRange.length < 2) {
-    ElMessage.warning('请选择完整的时间范围');
-    return;
+// 修改generateReport函数
+const handleGenerateReport = async () => {
+  // 验证是否有输入
+  if (!tableSearchInput.value) {
+    ElMessage.warning('请输入报表生成需求描述')
+    return
   }
-  
+
+  // 获取选中的报表列表
+  const selectedTables = [
+    ...aiRecommendedTables.filter(table => table.selected).map(table => table.name),
+    ...customTables.filter(table => table.selected).map(table => table.name)
+  ]
+
+  // 验证是否选择了报表
+  if (selectedTables.length === 0) {
+    ElMessage.warning('请至少选择一个报表')
+    return
+  }
+
   try {
     // 显示加载状态
     const loading = ElLoading.service({
       lock: true,
       text: '正在生成报表...',
-      background: 'rgba(0, 0, 0, 0.7)',
-    });
-    
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 模拟报表数据
-    reportData.value = {
-      title: getReportTitle(),
-      period: `${formatDate(reportConfig.value.dateRange[0])} 至 ${formatDate(reportConfig.value.dateRange[1])}`,
-      data: generateMockData(),
-      charts: ['bar', 'line', 'pie']
-    };
-    
-    reportGenerated.value = true;
-    loading.close();
-    ElMessage.success('报表生成成功');
+      background: 'rgba(255, 255, 255, 0.7)'
+    })
+
+    // 调用生成报表API
+    const response = await generateReport({
+      prompt: tableSearchInput.value,
+      TableList: selectedTables,
+      do_recom: false
+    })
+
+    // 处理返回结果
+    if (response.status === 'success') {
+      ElMessage.success('报表生成成功')
+      // 更新预览内容（这里需要根据实际返回格式调整）
+      previewContent.value = response.data
+    } else {
+      throw new Error(response.message || '生成报表失败')
+    }
+
+    loading.close()
   } catch (error) {
-    ElMessage.error('报表生成失败，请重试');
-    console.error('报表生成错误:', error);
+    console.error('生成报表失败:', error)
+    ElMessage.error(error instanceof Error ? error.message : '生成报表失败，请重试')
   }
-};
+}
 
 // 导出报表
 const exportReport = () => {

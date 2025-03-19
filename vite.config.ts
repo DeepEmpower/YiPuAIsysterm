@@ -101,6 +101,20 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
             });
           }
         },
+        '/generate': {
+          target: 'http://localhost:1008',
+          changeOrigin: true,
+          secure: false,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              if (req.method === 'OPTIONS') {
+                proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+                proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+                proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+              }
+            });
+          }
+        },
         "/img": {
           target: "https://dashscope.aliyuncs.com", // easymock
           changeOrigin: true,

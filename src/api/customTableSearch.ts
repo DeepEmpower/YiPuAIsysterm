@@ -22,6 +22,25 @@ const state = ref<SearchState>({
   tables: []
 })
 
+// 定义英文到中文的映射
+const tableNameMapping: { [key: string]: string } = {
+  'T_BD_SUPPLIERBANK': '供应商银行-单据头',
+  'T_BD_SUPPLIERBANK_L': '供应商银行-单据明细',
+  'T_BD_CUSTOMER': '客户信息',
+  'T_BD_SALESORDER': '销售订单',
+  'T_BD_PURCHASEORDER': '采购订单',
+  'T_BD_INVENTORY': '库存信息',
+  'T_BD_EMPLOYEE': '员工信息',
+  'T_BD_DEPARTMENT': '部门信息',
+  'T_BD_PRODUCT': '产品信息',
+  'T_BD_PAYMENT': '付款信息',
+  'T_BD_RECEIPT': '收款信息',
+  'T_BD_CONTRACT': '合同信息',
+  'T_BD_INVOICE': '发票信息',
+  'T_BD_DELIVERY': '发货信息',
+  'T_BD_LOGISTICS': '物流信息'
+}
+
 // 搜索自定义表格的函数
 export const searchCustomTables = async (keyword: string): Promise<CustomTable[]> => {
   state.value.loading = true
@@ -46,41 +65,37 @@ export const searchCustomTables = async (keyword: string): Promise<CustomTable[]
     }
 
     const data = await response.json()
-
     console.log('API返回的原始数据:', data)
     
     // 处理API返回的数据
     if (data && typeof data === 'object') {
       // 检查数据中是否包含tables字段
       if ('tables' in data && Array.isArray(data.tables)) {
-        // 将API返回的数据转换为CustomTable格式
-        const tables = data.tables.map((table: string, index: number) => ({
-          id: index + 1,
-          name: table,
-          selected: false
-        }))
+        // 将API返回的数据转换为CustomTable格式，并映射中文名称
+        const tables = data.tables.map((table: string, index: number) => {
+          console.log('处理表名:', table, '映射结果:', tableNameMapping[table])
+          return {
+            id: index + 1,
+            name: tableNameMapping[table] || table, // 如果找不到映射，使用原始名称
+            description: `基于"${keyword}"的查询结果`,
+            created_at: new Date().toISOString()
+          }
+        })
         
         state.value.tables = tables
         return tables
       } 
       // 如果数据本身就是数组
       else if (Array.isArray(data)) {
-        const tables = data.map((table: string, index: number) => ({
-          id: index + 1,
-          name: table,
-          selected: false
-        }))
-        
-        state.value.tables = tables
-        return tables
-      }
-      // 如果数据是字符串数组
-      else if (Array.isArray(data.InputList)) {
-        const tables = data.InputList.map((table: string, index: number) => ({
-          id: index + 1,
-          name: table,
-          selected: false
-        }))
+        const tables = data.map((table: string, index: number) => {
+          console.log('处理表名:', table, '映射结果:', tableNameMapping[table])
+          return {
+            id: index + 1,
+            name: tableNameMapping[table] || table, // 如果找不到映射，使用原始名称
+            description: `基于"${keyword}"的查询结果`,
+            created_at: new Date().toISOString()
+          }
+        })
         
         state.value.tables = tables
         return tables
