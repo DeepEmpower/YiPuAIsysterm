@@ -1,13 +1,31 @@
 <template>
-  <div class="report-generator-container fixed-height">
-    <!-- 主体内容区域 - 左右两栏布局 -->
+  <div class="report-generator-container">
+    <!-- 顶部导航栏 -->
+    <div class="header-section">
+      <div class="title-text">
+        <el-icon><Back /></el-icon>
+        <a href="#" @click.prevent="goBack">返回报表管理</a>
+        <span class="divider">|</span>
+        <span class="page-title">报表生成器</span>
+      </div>
+      <div class="action-area">
+        <el-button type="primary" @click="generateReport" :disabled="!canGenerate">
+          <el-icon><RefreshRight /></el-icon> 生成报表
+        </el-button>
+        <el-button @click="exportReport" :disabled="!reportGenerated">
+          <el-icon><Download /></el-icon> 导出报表
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 主体内容区域 -->
     <div class="main-content">
       <!-- 左侧：配置区域 -->
       <div class="config-column">
         <!-- 报表基本配置 -->
         <div class="report-config-section">
           <div class="section-title">
-            <h3><el-icon><Document /></el-icon> 报表配置</h3>
+            <h3>报表配置</h3>
           </div>
           
           <el-form :model="reportConfig" label-width="120px">
@@ -53,21 +71,20 @@
         <!-- 表格配置区域 -->
         <div class="table-guide">
           <div class="guide-content">
-            <h3><el-icon><DataAnalysis /></el-icon> 表格配置</h3>
+            <h3>表格配置</h3>
             
             <!-- 数据表配置选择器 -->
             <div class="table-config-selector">
               <!-- 搜索输入框 -->
               <div class="search-input">
                 <div class="input-label">
-                  <el-icon class="recommendation-icon"><ChatLineRound /></el-icon> AI推荐报表
+                  <el-icon><ChatLineRound /></el-icon> AI推荐报表
                 </div>
                 <el-input 
                   v-model="tableSearchInput"
                   placeholder="输入关键词，AI将为您推荐相关报表"
                   @keyup.enter="handleInputSearch"
                   prefix-icon="Search"
-                  size="large"
                   type="textarea"
                   :rows="2"
                   :autosize="{ minRows: 2, maxRows: 4 }"
@@ -78,7 +95,7 @@
               <!-- 两栏布局: AI推荐和自定义表格 -->
               <div class="tables-container">
                 <!-- 左侧: AI推荐表格 -->
-                <div class="table-column ai-recommendations glass-panel">
+                <div class="table-column ai-recommendations">
                   <div class="column-title">
                     <el-icon><ChatLineRound /></el-icon> AI推荐的报表
                   </div>
@@ -96,7 +113,7 @@
                 </div>
                 
                 <!-- 右侧: 用户自定义表格 -->
-                <div class="table-column custom-tables glass-panel">
+                <div class="table-column custom-tables">
                   <div class="column-title">
                     <el-icon><User /></el-icon> 用户自定义表格
                   </div>
@@ -144,27 +161,19 @@
       
       <!-- 右侧：报表预览区域 -->
       <div class="preview-column">
-        <div class="report-preview-section glass-panel">
+        <div class="report-preview-section">
           <div class="section-title">
             <div class="title-content">
-              <h3><el-icon><DocumentCopy /></el-icon> 报表预览</h3>
-            </div>
-            <div class="title-actions">
-              <el-button type="primary" @click="generateReport" size="small">
-                <el-icon><RefreshRight /></el-icon> 生成报表
-              </el-button>
-              <el-button @click="exportReport" :disabled="!reportGenerated" size="small">
-                <el-icon><Download /></el-icon> 导出报表
-              </el-button>
+              <h3>报表预览</h3>
             </div>
           </div>
           
-          <!-- 报表内容区域(添加滚动条) -->
+          <!-- 报表内容区域 -->
           <div class="report-content-wrapper">
             <!-- 报表未生成时显示提示 -->
             <div v-if="!reportGenerated" class="empty-preview">
               <div class="preview-placeholder">
-                <el-icon :size="60" class="preview-icon"><DataAnalysis /></el-icon>
+                <el-icon :size="48" class="preview-icon"><DataAnalysis /></el-icon>
                 <h4>报表预览区域</h4>
                 <p>请完成左侧配置并点击"生成报表"按钮</p>
                 <div class="preview-tips">
@@ -186,7 +195,6 @@
             
             <!-- 报表已生成时显示预览内容 -->
             <div v-else class="report-content">
-              <!-- 根据不同报表类型显示不同的预览组件 -->
               <component :is="currentReportComponent" :data="reportData"></component>
             </div>
           </div>
@@ -198,8 +206,10 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue';
-import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download } from '@element-plus/icons-vue';
+import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download, Back } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
+import { useReportRecommendation } from '@/api/reportRecommendation';
+import { useRouter } from 'vue-router';
 
 // 修正引入路径
 import FinancialReport from '@/views/management/report/components/FinancialReport.vue';
@@ -208,6 +218,8 @@ import HRReport from '@/views/management/report/components/HRReport.vue';
 import ProductionReport from '@/views/management/report/components/ProductionReport.vue';
 import CustomerReport from '@/views/management/report/components/CustomerReport.vue';
 
+const router = useRouter();
+
 // 报表配置
 const reportConfig = ref({
   type: 'financial',
@@ -215,6 +227,9 @@ const reportConfig = ref({
   dataSource: 'system',
   format: 'excel'
 });
+
+// 报表是否正在生成
+const isGenerating = ref(false);
 
 // 报表是否已生成
 const reportGenerated = ref(false);
@@ -278,29 +293,52 @@ const toggleTableSelection = (table) => {
   table.selected = !table.selected;
 };
 
-// 处理AI推荐报表
-const handleInputSearch = () => {
+// 在setup中添加
+const { state: recommendationState, getRecommendedReports } = useReportRecommendation();
+
+// 修改handleInputSearch函数
+const handleInputSearch = async () => {
   // 清除搜索结果消息
   searchResultMessage.value = '';
   
-  // 调用AI API获取推荐报表
-  // 目前仅做UI展示，添加模拟数据
   if (tableSearchInput.value) {
-    // 模拟搜索结果
     const searchText = tableSearchInput.value.trim();
     if (searchText) {
-      // 清除之前的推荐
-      aiRecommendedTables.splice(0, aiRecommendedTables.length);
-      
-      // 添加模拟推荐结果
-      aiRecommendedTables.push(
-        { id: Date.now(), name: `${searchText}汇总表`, selected: false },
-        { id: Date.now() + 1, name: `${searchText}分析报表`, selected: false },
-        { id: Date.now() + 2, name: `${searchText}趋势图`, selected: false }
-      );
-      
-      // 生成推荐后清空输入框
-      tableSearchInput.value = '';
+      try {
+        // 显示加载状态
+        const loading = ElLoading.service({
+          lock: true,
+          text: '正在获取AI推荐报表...',
+          background: 'rgba(255, 255, 255, 0.7)'
+        });
+        
+        // 调用API获取推荐报表
+        const recommendedReports = await getRecommendedReports(searchText);
+        
+        // 清除之前的推荐
+        aiRecommendedTables.splice(0, aiRecommendedTables.length);
+        
+        // 添加新的推荐结果
+        recommendedReports.forEach(report => {
+          aiRecommendedTables.push({
+            id: parseInt(report.id),
+            name: report.name,
+            selected: false
+          });
+        });
+        
+        // 更新搜索结果消息
+        searchResultMessage.value = `已找到 ${recommendedReports.length} 个推荐报表`;
+        
+        // 清空输入框
+        tableSearchInput.value = '';
+        
+        loading.close();
+      } catch (error) {
+        console.error('获取推荐报表失败:', error);
+        ElMessage.error('获取推荐报表失败，请重试');
+        searchResultMessage.value = '获取推荐报表失败，请重试';
+      }
     }
   }
 };
@@ -471,6 +509,19 @@ const generateMockData = () => {
       return {};
   }
 };
+
+// 返回上一页
+const goBack = () => {
+  router.back();
+};
+
+// 是否可以生成报表
+const canGenerate = computed(() => {
+  return reportConfig.value.type && 
+         reportConfig.value.dateRange && 
+         reportConfig.value.dateRange.length === 2 &&
+         !isGenerating.value;
+});
 </script>
 
 <style scoped lang="scss">
@@ -496,8 +547,331 @@ const generateMockData = () => {
 }
 
 .report-generator-container {
-  padding: 12px;
-  background-color: #f5f7fa;
+  padding: 0;
+  background-color: #f0f2f5;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  
+  .header-section {
+    padding: 10px 20px;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e4e7ed;
+    
+    .title-text {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      
+      a {
+        color: #409EFF;
+        text-decoration: none;
+        margin-left: 5px;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      
+      .divider {
+        margin: 0 10px;
+        color: #dcdfe6;
+      }
+      
+      .page-title {
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+    
+    .action-area {
+      display: flex;
+      gap: 10px;
+    }
+  }
+  
+  .main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+    
+    .config-column {
+      width: 50%;
+      border-right: 1px solid #e4e7ed;
+      background-color: white;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      
+      .report-config-section {
+        background-color: white;
+        padding: 20px;
+        border-bottom: 1px solid #e4e7ed;
+        max-height: none;
+        overflow-y: auto;
+        box-shadow: none;
+        border-radius: 0;
+        
+        .section-title h3 {
+          margin: 0 0 20px 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #303133;
+        }
+        
+        .el-form {
+          :deep(.el-form-item) {
+            margin-bottom: 18px;
+          }
+        }
+      }
+      
+      .table-guide {
+        flex: 1;
+        display: block;
+        background-color: white;
+        padding: 20px;
+        overflow-y: hidden;
+        
+        .guide-content {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          
+          h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 16px 0;
+            color: #4d6fc9;
+            font-size: 16px;
+            font-weight: 600;
+            
+            .el-icon {
+              font-size: 20px;
+            }
+          }
+        }
+        
+        .table-config-selector {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          overflow: hidden;
+          
+          .search-input {
+            margin-bottom: 15px;
+            padding: 12px;
+            background-color: #f9fafc;
+            border-radius: 8px;
+            border: 1px solid #e6e9f1;
+            
+            .input-label {
+              display: flex;
+              align-items: center;
+              margin-bottom: 10px;
+              font-size: 14px;
+              font-weight: 500;
+              color: #4d6fc9;
+              
+              .el-icon {
+                font-size: 18px;
+                margin-right: 6px;
+              }
+            }
+            
+            .el-input {
+              :deep(.el-textarea__inner) {
+                padding: 10px 12px;
+                font-size: 14px;
+                min-height: 60px;
+                resize: none;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                border-radius: 6px;
+              }
+            }
+          }
+          
+          .tables-container {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            min-height: 0;
+            
+            .table-column {
+              flex: 1;
+              background-color: #f9fafc;
+              border: 1px solid #e6e9f1;
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              
+              .column-title {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 500;
+                margin-bottom: 12px;
+                font-size: 14px;
+                color: #606266;
+                
+                .el-icon {
+                  color: #4d6fc9;
+                }
+              }
+              
+              .table-items {
+                flex: 1;
+                overflow-y: auto;
+                max-height: 180px;
+                
+                .table-item {
+                  display: flex;
+                  align-items: center;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  
+                  &:hover {
+                    background-color: #ecf5ff;
+                  }
+                  
+                  .el-checkbox {
+                    margin-right: 8px;
+                  }
+                  
+                  span {
+                    flex: 1;
+                    font-size: 14px;
+                    color: #606266;
+                  }
+                }
+              }
+            }
+          }
+          
+          .action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            
+            .input-label.smaller {
+              font-size: 13px;
+              color: #606266;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              
+              .el-icon {
+                font-size: 16px;
+                color: #4d6fc9;
+              }
+            }
+            
+            .custom-input {
+              flex: 1;
+            }
+          }
+        }
+        
+        .search-result-tip {
+          margin-top: 10px;
+          padding: 8px 12px;
+          font-size: 14px;
+          border-radius: 4px;
+          
+          &.success-message {
+            background-color: #f0f9eb;
+            color: #67c23a;
+          }
+          
+          &.warning-message {
+            background-color: #fdf6ec;
+            color: #e6a23c;
+          }
+        }
+      }
+    }
+    
+    .preview-column {
+      flex: 1;
+      overflow: auto;
+      background-color: white;
+      padding: 20px;
+      
+      .report-preview-section {
+        height: 100%;
+        background: none;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+        
+        .section-title {
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid #e4e7ed;
+          
+          .title-content h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+          }
+        }
+        
+        .report-content-wrapper {
+          background-color: #f9fafc;
+          border-radius: 4px;
+          padding: 20px;
+          min-height: 300px;
+          
+          .empty-preview {
+            min-height: 260px;
+            
+            .preview-placeholder {
+              .preview-icon {
+                color: #909399;
+                margin-bottom: 15px;
+              }
+              
+              h4 {
+                font-size: 16px;
+                margin-bottom: 10px;
+              }
+              
+              .preview-tips {
+                margin-top: 30px;
+                
+                .tip-item {
+                  margin-bottom: 10px;
+                  color: #606266;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* 移除重复的样式定义 */
+.report-config-section,
+.table-guide,
+.report-preview-section {
+  margin: 0;
+  border-radius: 0;
 }
 
 /* 玻璃面板效果 */
@@ -511,274 +885,6 @@ const generateMockData = () => {
 .report-generator-container {
   padding: 12px;
   background-color: #f5f7fa;
-  
-  .report-config-section {
-    background-color: white;
-    padding: 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    max-height: 235px;
-    overflow-y: auto;
-    
-    .section-title h3 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #4d6fc9;
-      
-      .el-icon {
-        font-size: 20px;
-      }
-    }
-  }
-  
-  .report-preview-section {
-    flex: 1;
-    background-color: white;
-    padding: 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    
-    .report-content-wrapper {
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 5px; /* 为滚动条预留空间 */
-    }
-    
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .title-content {
-        display: flex;
-        align-items: center;
-      }
-      
-      .title-actions {
-        display: flex;
-        gap: 10px;
-        
-        .el-button {
-          transition: all 0.2s ease;
-          
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          }
-          
-          .el-icon {
-            margin-right: 4px;
-          }
-        }
-      }
-    }
-    
-    .preview-content {
-      flex: 1;
-      overflow: auto;
-      padding: 0;
-      
-      .empty-preview {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #909399;
-        
-        .preview-placeholder {
-          text-align: center;
-          width: 100%;
-          padding: 30px 20px;
-          
-          .preview-icon {
-            color: #c0c4cc;
-            margin-bottom: 20px;
-          }
-          
-          h4 {
-            font-size: 18px;
-            color: #606266;
-            margin: 0 0 10px 0;
-          }
-          
-          p {
-            color: #909399;
-            margin: 0 0 25px 0;
-          }
-          
-          .preview-tips {
-            margin-top: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
-            text-align: left;
-            
-            .tip-item {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              margin-bottom: 12px;
-              color: #606266;
-              
-              .el-icon {
-                color: #4d6fc9;
-                font-size: 16px;
-              }
-            }
-          }
-        }
-      }
-      
-      .report-content {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-  }
-  
-  .report-guide {
-    flex: 1;
-    display: block;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    padding: 16px;
-    overflow-y: hidden;
-    
-    .guide-content {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      
-      h3 {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 12px 0;
-        color: #4d6fc9;
-        font-size: 18px;
-        
-        .el-icon {
-          font-size: 20px;
-        }
-      }
-    }
-  }
-
-  /* 表格选择器样式 */
-  .table-config-selector {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    overflow: hidden;
-    max-height: calc(100% - 80px); /* 减小高度，给搜索框留更多空间 */
-    
-    .search-input {
-      margin-bottom: 15px;
-      padding: 12px;
-      background-color: #f9fafc;
-      border-radius: 8px;
-      border: 1px solid #e6e9f1;
-      display: flex;
-      flex-direction: column;
-      
-      .input-label {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-        font-size: 15px;
-        font-weight: 500;
-        color: #4d6fc9;
-        
-        .recommendation-icon {
-          font-size: 18px;
-          margin-right: 6px;
-        }
-      }
-      
-      .el-input {
-        :deep(.el-input__wrapper) {
-          padding: 8px 12px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        :deep(.el-input__inner) {
-          font-size: 14px;
-        }
-        
-        :deep(.el-textarea__inner) {
-          padding: 10px 12px;
-          font-size: 14px;
-          min-height: 60px;
-          resize: none;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-          border-radius: 6px;
-        }
-      }
-    }
-    
-    .tables-container {
-      flex: 1;
-      display: flex;
-      gap: 12px;
-      margin-bottom: 8px;
-      min-height: 0; /* 关键设置：允许flex子项在需要时收缩 */
-      
-      .table-column {
-        flex: 1;
-        border-radius: 4px;
-        padding: 8px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        background-color: #f5f7fa;
-        
-        .column-title {
-          font-weight: 500;
-          margin-bottom: 8px;
-          font-size: 14px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-        
-        .table-items {
-          flex: 1;
-          overflow-y: auto;
-          max-height: 180px; /* 减小表格高度 */
-        }
-      }
-    }
-  }
-
-  .search-result-tip {
-    margin-top: 10px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border-radius: 4px;
-    flex-shrink: 0; /* 防止消息挤压表格空间 */
-  }
-
-  /* 添加不同类型消息的样式 */
-  .success-message {
-    background-color: #f0f9eb;
-    color: #67c23a;
-  }
-  
-  .warning-message {
-    background-color: #fdf6ec;
-    color: #e6a23c;
-  }
 }
 
 /* 主内容区域 - 左右两栏布局 */
@@ -838,13 +944,10 @@ const generateMockData = () => {
   flex: 1;
   display: block;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 16px;
+  padding: 20px;
   overflow-y: hidden;
   
   .guide-content {
-    width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -853,13 +956,158 @@ const generateMockData = () => {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 0 0 12px 0;
+      margin: 0 0 16px 0;
       color: #4d6fc9;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 600;
       
       .el-icon {
         font-size: 20px;
       }
+    }
+  }
+  
+  .table-config-selector {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow: hidden;
+    
+    .search-input {
+      margin-bottom: 15px;
+      padding: 12px;
+      background-color: #f9fafc;
+      border-radius: 8px;
+      border: 1px solid #e6e9f1;
+      
+      .input-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #4d6fc9;
+        
+        .el-icon {
+          font-size: 18px;
+          margin-right: 6px;
+        }
+      }
+      
+      .el-input {
+        :deep(.el-textarea__inner) {
+          padding: 10px 12px;
+          font-size: 14px;
+          min-height: 60px;
+          resize: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          border-radius: 6px;
+        }
+      }
+    }
+    
+    .tables-container {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 15px;
+      min-height: 0;
+      
+      .table-column {
+        flex: 1;
+        background-color: #f9fafc;
+        border: 1px solid #e6e9f1;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        
+        .column-title {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 500;
+          margin-bottom: 12px;
+          font-size: 14px;
+          color: #606266;
+          
+          .el-icon {
+            color: #4d6fc9;
+          }
+        }
+        
+        .table-items {
+          flex: 1;
+          overflow-y: auto;
+          max-height: 180px;
+          
+          .table-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            
+            &:hover {
+              background-color: #ecf5ff;
+            }
+            
+            .el-checkbox {
+              margin-right: 8px;
+            }
+            
+            span {
+              flex: 1;
+              font-size: 14px;
+              color: #606266;
+            }
+          }
+        }
+      }
+    }
+    
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      
+      .input-label.smaller {
+        font-size: 13px;
+        color: #606266;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        .el-icon {
+          font-size: 16px;
+          color: #4d6fc9;
+        }
+      }
+      
+      .custom-input {
+        flex: 1;
+      }
+    }
+  }
+  
+  .search-result-tip {
+    margin-top: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    
+    &.success-message {
+      background-color: #f0f9eb;
+      color: #67c23a;
+    }
+    
+    &.warning-message {
+      background-color: #fdf6ec;
+      color: #e6a23c;
     }
   }
 }
@@ -889,24 +1137,6 @@ const generateMockData = () => {
     .title-content {
       display: flex;
       align-items: center;
-    }
-    
-    .title-actions {
-      display: flex;
-      gap: 10px;
-      
-      .el-button {
-        transition: all 0.2s ease;
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .el-icon {
-          margin-right: 4px;
-        }
-      }
     }
   }
   

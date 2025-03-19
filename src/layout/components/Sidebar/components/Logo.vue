@@ -6,7 +6,7 @@
       </router-link>
       <router-link v-else key="expand" class="sidebar-logo-link" to="/">
         <!-- <img src="@/assets/image/logo.png" class="sidebar-logo" /> -->
-        <h1 class="sidebar-title">人工智能出版系统</h1>
+        <h1 class="sidebar-title">企业人工智能系统</h1>
       </router-link>
     </transition>
   </div>
