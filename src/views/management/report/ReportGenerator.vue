@@ -174,33 +174,49 @@
           
           <!-- 报表内容区域 -->
           <div class="report-content-wrapper">
-            <!-- 报表未生成时显示提示 -->
-            <div v-if="!reportGenerated" class="empty-preview">
-              <div class="preview-placeholder">
-                <el-icon :size="48" class="preview-icon"><DataAnalysis /></el-icon>
-                <h4>报表预览区域</h4>
-                <p>请完成左侧配置并点击"生成报表"按钮</p>
-                <div class="preview-tips">
-                  <div class="tip-item">
-                    <el-icon><InfoFilled /></el-icon>
-                    <span>选择所需的报表类型和时间范围</span>
-                  </div>
-                  <div class="tip-item">
-                    <el-icon><InfoFilled /></el-icon>
-                    <span>从AI推荐或自定义表格中选择所需数据表</span>
-                  </div>
-                  <div class="tip-item">
-                    <el-icon><InfoFilled /></el-icon>
-                    <span>点击上方"生成报表"按钮查看结果</span>
+            <!-- 根据状态显示不同内容 -->
+            <template v-if="generationState.previewContent">
+              <!-- 有内容时显示预览 -->
+              <div class="report-content">
+                <div class="markdown-preview">
+                  <pre>{{ generationState.previewContent }}</pre>
+                </div>
+              </div>
+            </template>
+            
+            <template v-else-if="generationState.isGenerating">
+              <!-- 正在生成时显示加载状态 -->
+              <div class="loading-preview">
+                <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
+                <h4>正在生成报表...</h4>
+                <p>请稍候，这可能需要一些时间</p>
+              </div>
+            </template>
+            
+            <template v-else>
+              <!-- 空状态显示 -->
+              <div class="empty-preview">
+                <div class="preview-placeholder">
+                  <el-icon :size="48" class="preview-icon"><DataAnalysis /></el-icon>
+                  <h4>报表预览区域</h4>
+                  <p>请完成左侧配置并点击"生成报表"按钮</p>
+                  <div class="preview-tips">
+                    <div class="tip-item">
+                      <el-icon><InfoFilled /></el-icon>
+                      <span>选择所需的报表类型和时间范围</span>
+                    </div>
+                    <div class="tip-item">
+                      <el-icon><InfoFilled /></el-icon>
+                      <span>从AI推荐或自定义表格中选择所需数据表</span>
+                    </div>
+                    <div class="tip-item">
+                      <el-icon><InfoFilled /></el-icon>
+                      <span>点击上方"生成报表"按钮查看结果</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <!-- 报表已生成时显示预览内容 -->
-            <div v-else class="report-content">
-              <component :is="currentReportComponent" :data="reportData"></component>
-            </div>
+            </template>
           </div>
         </div>
       </div>
@@ -210,7 +226,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue';
-import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download, Back } from '@element-plus/icons-vue';
+import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download, Back, Loading } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
 import { useReportRecommendation } from '@/api/reportRecommendation';
 import { useRouter } from 'vue-router';
@@ -438,13 +454,6 @@ const handleGenerateReport = async () => {
   }
 
   try {
-    // 显示加载状态
-    const loading = ElLoading.service({
-      lock: true,
-      text: '正在生成报表...',
-      background: 'rgba(255, 255, 255, 0.7)'
-    })
-
     // 调用生成报表API
     const response = await generateReport({
       prompt: tableSearchInput.value,
@@ -455,13 +464,12 @@ const handleGenerateReport = async () => {
     // 处理返回结果
     if (response.status === 'success') {
       ElMessage.success('报表生成成功')
-      // 更新预览内容（这里需要根据实际返回格式调整）
+      // 更新预览内容
       previewContent.value = response.data
+      reportGenerated.value = true
     } else {
       throw new Error(response.message || '生成报表失败')
     }
-
-    loading.close()
   } catch (error) {
     console.error('生成报表失败:', error)
     ElMessage.error(error instanceof Error ? error.message : '生成报表失败，请重试')
@@ -1254,5 +1262,35 @@ const canGenerate = computed(() => {
 /* 确保表格正常显示 */
 .el-table {
   margin-bottom: 20px;
+}
+
+.loading-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  
+  .loading-icon {
+    color: #409EFF;
+    animation: rotate 2s linear infinite;
+  }
+  
+  h4 {
+    margin: 20px 0 10px;
+    font-size: 16px;
+    color: #303133;
+  }
+  
+  p {
+    color: #909399;
+    font-size: 14px;
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style> 
