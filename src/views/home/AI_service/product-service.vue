@@ -1,94 +1,147 @@
 <template>
-  <div class="chat-container">
-    <!-- 顶部导航栏 -->
-    <div class="chat-header">
-      <div class="header-left">
-        <el-button @click="goBack" text>
+  <div class="product-service-container">
+    <!-- 顶部标题和操作栏 -->
+    <div class="header-section">
+      <div class="title-area">
+        <div class="title-text">
           <el-icon><Back /></el-icon>
-          返回
-        </el-button>
-        <h2>产品客服助手</h2>
+          <a href="#" @click.prevent="goBack">返回AI客服团队</a>
+          <span class="divider">|</span>
+          <span class="page-title">产品客服助手</span>
+        </div>
       </div>
-      <div class="header-right">
-        <el-button @click="clearChat" text type="danger">
-          <el-icon><Delete /></el-icon>
-          清空对话
-        </el-button>
+      <div class="action-area">
+        <el-tooltip content="清空对话记录" placement="top">
+          <el-button type="danger" link @click="handleClearChat">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </el-tooltip>
       </div>
     </div>
 
-    <!-- 聊天内容区域 -->
-    <div class="chat-content" ref="chatContentRef">
-      <!-- 欢迎消息 -->
-      <div class="message system-message">
-        <div class="message-content">
-          <p>👋 您好！我是您的产品客服助手。我可以：</p>
-          <ul>
-            <li>解答产品使用问题</li>
-            <li>提供技术支持指导</li>
-            <li>处理产品相关咨询</li>
-            <li>推荐适合的解决方案</li>
-          </ul>
-          <p>请问有什么可以帮您？</p>
-        </div>
-      </div>
+    <!-- 主内容区域 - 左右两栏结构 -->
+    <div class="content-wrapper">
+      <!-- 左侧栏：聊天记录 -->
+      <div class="left-column">
+        <div class="chat-section">
+          <div class="chat-content" ref="chatAreaRef">
+            <!-- 欢迎消息 -->
+            <div class="welcome-message">
+              <div class="assistant-avatar">
+                <img :src="assistantAvatar" alt="助手">
+              </div>
+              <div class="welcome-content">
+                <h3>您好！我是您的产品客服助手 👋</h3>
+                <p>我可以帮您：</p>
+                <ul>
+                  <li>解答产品使用问题</li>
+                  <li>提供技术支持指导</li>
+                  <li>处理产品相关咨询</li>
+                  <li>推荐适合的解决方案</li>
+                </ul>
+                <p>请问有什么可以帮您？</p>
+              </div>
+            </div>
 
-      <!--对话消息列表-->
-      <div 
-        v-for="(message, index) in chatMessages" 
-        :key="index" 
-        :class="['message', message.role === 'user' ? 'user-message' : 'assistant-message']"
-      >
-        <div class="message-avatar">
-          <img 
-            :src="message.role === 'user' ? userAvatar : assistantAvatar" 
-            :alt="message.role === 'user' ? '用户' : '助手'"
-          >
-        </div>
-        <div class="message-content">
-          <div class="message-text" v-html="formatMessage(message.content)"></div>
-          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
-        </div>
-      </div>
+            <!-- 消息列表 -->
+            <div class="message-list">
+              <div 
+                v-for="(msg, index) in messages" 
+                :key="index"
+                :class="['message', msg.role === 'user' ? 'user-message' : 'assistant-message']"
+              >
+                <div class="message-avatar">
+                  <img 
+                    :src="msg.role === 'user' ? userAvatar : assistantAvatar" 
+                    :alt="msg.role === 'user' ? '用户' : '助手'"
+                  >
+                </div>
+                <div class="message-body">
+                  <div class="message-content" v-html="formatMessage(msg.content)"></div>
+                  <div class="message-meta">{{ formatTime(msg.timestamp) }}</div>
+                </div>
+              </div>
 
-      <!-- 加载状态 -->
-      <div class="message assistant-message" v-if="isLoading">
-        <div class="message-avatar">
-          <img :src="assistantAvatar" alt="助手">
+              <!-- 加载状态 -->
+              <div v-if="isLoading" class="message assistant-message">
+                <div class="message-avatar">
+                  <img :src="assistantAvatar" alt="助手">
+                </div>
+                <div class="message-body">
+                  <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="message-content">
-          <div class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
+
+        <!-- 输入区域 -->
+        <div class="input-section">
+          <div class="input-wrapper">
+            <el-input
+              v-model="userInput"
+              type="textarea"
+              :rows="3"
+              :placeholder="isLoading ? '正在回复中...' : '请输入您的问题（Shift + Enter 换行，Enter 发送）'"
+              resize="none"
+              @keydown.enter.prevent="handleEnterPress"
+            />
+            <el-button 
+              type="primary" 
+              :disabled="!userInput.trim() || isLoading"
+              @click="handleSendMessage"
+            >
+              <el-icon><Position /></el-icon>
+              发送
+            </el-button>
+          </div>
+          <div class="input-tips">
+            <el-icon><InfoFilled /></el-icon>
+            <span>支持多轮对话，AI会记住上下文</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 输入区域 -->
-    <div class="chat-input">
-      <div class="input-container">
-        <el-input
-          v-model="userInput"
-          type="textarea"
-          :rows="3"
-          placeholder="请输入您的问题（Shift + Enter 换行，Enter 发送）"
-          resize="none"
-          @keydown.enter.prevent="handleEnterPress"
-        />
-        <el-button 
-          type="primary" 
-          :disabled="!userInput.trim() || isLoading"
-          @click="sendMessage"
-        >
-          <el-icon><Position /></el-icon>
-          发送
-        </el-button>
-      </div>
-      <div class="input-tips">
-        <el-icon><InfoFilled /></el-icon>
-        <span>支持多轮对话，AI会记住上下文</span>
+      <!-- 右侧栏：产品信息 -->
+      <div class="right-column">
+        <div class="product-info-section">
+          <div class="section-title">
+            <h3>产品信息</h3>
+          </div>
+          <div class="product-details">
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="产品名称">示例产品</el-descriptions-item>
+              <el-descriptions-item label="产品版本">v1.0.0</el-descriptions-item>
+              <el-descriptions-item label="产品类型">软件服务</el-descriptions-item>
+              <el-descriptions-item label="支持平台">Web/移动端</el-descriptions-item>
+              <el-descriptions-item label="更新时间">2024-03-19</el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </div>
+
+        <div class="quick-actions-section">
+          <div class="section-title">
+            <h3>快捷操作</h3>
+          </div>
+          <div class="quick-actions">
+            <el-button-group>
+              <el-button type="primary" plain>
+                <el-icon><Document /></el-icon>
+                查看文档
+              </el-button>
+              <el-button type="primary" plain>
+                <el-icon><VideoPlay /></el-icon>
+                视频教程
+              </el-button>
+              <el-button type="primary" plain>
+                <el-icon><QuestionFilled /></el-icon>
+                常见问题
+              </el-button>
+            </el-button-group>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -98,33 +151,36 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Back, Delete, Position, InfoFilled } from '@element-plus/icons-vue'
+import { Back, Delete, Position, InfoFilled, Document, VideoPlay, QuestionFilled } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 
-const md = new MarkdownIt()
+// 初始化markdown解析器
+const md = new MarkdownIt({
+  breaks: true,
+  linkify: true
+})
 
+// 状态管理
 const router = useRouter()
-const chatContentRef = ref<HTMLElement | null>(null)
+const chatAreaRef = ref<HTMLElement | null>(null)
 const userInput = ref('')
 const isLoading = ref(false)
-const chatMessages = ref<Array<{
+const messages = ref<Array<{
   role: 'user' | 'assistant'
   content: string
   timestamp: number
 }>>([])
 
-// 头像图片路径
+// 资源路径
 const userAvatar = '/src/assets/images/avatars/user.png'
 const assistantAvatar = '/src/assets/images/avatars/avatar6.png'
 
 // 返回上一页
-const goBack = () => {
-  router.back()
-}
+const goBack = () => router.back()
 
 // 清空对话
-const clearChat = () => {
+const handleClearChat = () => {
   ElMessageBox.confirm(
     '确定要清空所有对话记录吗？',
     '清空确认',
@@ -134,27 +190,25 @@ const clearChat = () => {
       type: 'warning'
     }
   ).then(() => {
-    chatMessages.value = []
+    messages.value = []
     ElMessage.success('对话已清空')
-  })
+  }).catch(() => {})
 }
 
-// 处理消息发送
-const sendMessage = async () => {
-  const message = userInput.value.trim()
-  if (!message || isLoading.value) return
+// 发送消息
+const handleSendMessage = async () => {
+  const content = userInput.value.trim()
+  if (!content || isLoading.value) return
 
   // 添加用户消息
-  chatMessages.value.push({
+  messages.value.push({
     role: 'user',
-    content: message,
+    content,
     timestamp: Date.now()
   })
 
-  // 清空输入框
+  // 清空输入框并滚动到底部
   userInput.value = ''
-
-  // 滚动到底部
   await nextTick()
   scrollToBottom()
 
@@ -162,26 +216,22 @@ const sendMessage = async () => {
   isLoading.value = true
 
   try {
-    // TODO: 调用API发送消息
-    // const response = await sendMessageToAPI(message)
-    
     // 模拟API响应
     await new Promise(resolve => setTimeout(resolve, 1000))
-    const mockResponse = `感谢您的咨询！我理解您的问题，让我为您详细说明：
+    const response = `感谢您的咨询！让我为您详细说明：
 
-1. 首先，请确认您遇到的具体情况
-2. 我会根据产品类型提供相应解决方案
+1. 首先，请告诉我您遇到的具体问题
+2. 我会根据您的情况提供个性化解决方案
 3. 如果需要，我可以提供更详细的操作指南
 
 您可以随时告诉我更多细节，我会为您提供更精准的帮助。`
 
     // 添加助手回复
-    chatMessages.value.push({
+    messages.value.push({
       role: 'assistant',
-      content: mockResponse,
+      content: response,
       timestamp: Date.now()
     })
-
   } catch (error) {
     ElMessage.error('消息发送失败，请重试')
   } finally {
@@ -191,13 +241,13 @@ const sendMessage = async () => {
   }
 }
 
-// 处理Enter键按下
+// 处理回车键
 const handleEnterPress = (e: KeyboardEvent) => {
-  if (e.shiftKey) return // Shift + Enter 换行
-  sendMessage()
+  if (e.shiftKey) return
+  handleSendMessage()
 }
 
-// 格式化消息内容（支持Markdown）
+// 格式化消息内容
 const formatMessage = (content: string) => {
   const html = md.render(content)
   return DOMPurify.sanitize(html)
@@ -213,8 +263,8 @@ const formatTime = (timestamp: number) => {
 
 // 滚动到底部
 const scrollToBottom = () => {
-  if (chatContentRef.value) {
-    chatContentRef.value.scrollTop = chatContentRef.value.scrollHeight
+  if (chatAreaRef.value) {
+    chatAreaRef.value.scrollTop = chatAreaRef.value.scrollHeight
   }
 }
 
@@ -225,180 +275,370 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.chat-container {
+.product-service-container {
+  padding: 0;
+  background-color: #f0f2f5;
+  height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: #f5f7fa;
-
-  .chat-header {
+  overflow: hidden;
+  
+  .header-section {
+    padding: 10px 20px;
+    background-color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    z-index: 1;
-
-    .header-left {
+    border-bottom: 1px solid #e4e7ed;
+    
+    .title-text {
       display: flex;
       align-items: center;
-      gap: 16px;
-
-      h2 {
-        margin: 0;
-        font-size: 18px;
+      font-size: 14px;
+      
+      a {
+        color: #409EFF;
+        text-decoration: none;
+        margin-left: 5px;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      
+      .divider {
+        margin: 0 10px;
+        color: #dcdfe6;
+      }
+      
+      .page-title {
+        font-weight: 600;
         color: #303133;
       }
     }
   }
-
+  
+  .content-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .left-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-right: 1px solid #e4e7ed;
+  }
+  
+  .right-column {
+    width: 300px;
+    background-color: white;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  
+  .chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
   .chat-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
-    
-    .message {
+    padding: 20px;
+    scroll-behavior: smooth;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(144, 147, 153, 0.3);
+      border-radius: 2px;
+
+      &:hover {
+        background: rgba(144, 147, 153, 0.5);
+      }
+    }
+
+    .welcome-message {
       display: flex;
-      margin-bottom: 24px;
-      
-      .message-avatar {
-        width: 40px;
-        height: 40px;
-        margin-right: 16px;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 8px;
+
+      .assistant-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+        overflow: hidden;
         flex-shrink: 0;
-        
+
         img {
           width: 100%;
           height: 100%;
-          border-radius: 50%;
           object-fit: cover;
         }
       }
-      
-      .message-content {
+
+      .welcome-content {
         flex: 1;
-        max-width: 80%;
-        
-        .message-text {
-          padding: 12px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          line-height: 1.6;
-          
-          :deep(p) {
-            margin: 0 0 10px;
-            &:last-child {
-              margin-bottom: 0;
+
+        h3 {
+          margin: 0 0 12px;
+          font-size: 16px;
+          color: #303133;
+        }
+
+        p {
+          margin: 8px 0;
+          color: #606266;
+        }
+
+        ul {
+          margin: 12px 0;
+          padding-left: 20px;
+          color: #606266;
+
+          li {
+            margin-bottom: 6px;
+            position: relative;
+
+            &::before {
+              content: '';
+              position: absolute;
+              left: -12px;
+              top: 8px;
+              width: 4px;
+              height: 4px;
+              background: currentColor;
+              border-radius: 50%;
+              opacity: 0.6;
             }
           }
-          
-          :deep(ul) {
-            margin: 8px 0;
-            padding-left: 20px;
-          }
-        }
-        
-        .message-time {
-          margin-top: 4px;
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-    }
-    
-    .user-message {
-      flex-direction: row-reverse;
-      
-      .message-avatar {
-        margin-right: 0;
-        margin-left: 16px;
-      }
-      
-      .message-content {
-        .message-text {
-          background-color: #409eff;
-          color: #fff;
-        }
-        
-        .message-time {
-          text-align: right;
-        }
-      }
-    }
-    
-    .assistant-message {
-      .message-content {
-        .message-text {
-          background-color: #fff;
-          color: #303133;
         }
       }
     }
 
-    .system-message {
-      .message-content {
-        max-width: 100%;
-        
-        .message-text {
-          background-color: #f4f4f5;
-          color: #606266;
+    .message-list {
+      .message {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: messageIn 0.3s ease forwards;
+
+        @keyframes messageIn {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .message-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 18px;
+          overflow: hidden;
+          flex-shrink: 0;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+
+        .message-body {
+          max-width: 70%;
+
+          .message-content {
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #303133;
+
+            :deep(p) {
+              margin: 0 0 8px;
+
+              &:last-child {
+                margin-bottom: 0;
+              }
+            }
+
+            :deep(ul) {
+              margin: 8px 0;
+              padding-left: 16px;
+            }
+          }
+
+          .message-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #909399;
+            opacity: 0.8;
+          }
+        }
+
+        &.user-message {
+          flex-direction: row-reverse;
+
+          .message-body {
+            .message-content {
+              background: #409eff;
+              color: #fff;
+            }
+
+            .message-meta {
+              text-align: right;
+            }
+          }
         }
       }
     }
   }
+  
+  .input-section {
+    padding: 20px;
+    border-top: 1px solid #e4e7ed;
+    background-color: white;
 
-  .chat-input {
-    padding: 16px 24px;
-    background-color: #fff;
-    border-top: 1px solid #ebeef5;
-    
-    .input-container {
+    .input-wrapper {
       display: flex;
-      gap: 16px;
-      
-      .el-input {
-        flex: 1;
+      gap: 12px;
+
+      :deep(.el-textarea__inner) {
+        min-height: 72px !important;
+        padding: 12px;
+        font-size: 14px;
+        border-radius: 8px;
+        resize: none;
+        border-color: #dcdfe6;
+        transition: all 0.3s;
+
+        &:hover {
+          border-color: #c0c4cc;
+        }
+
+        &:focus {
+          border-color: #409eff;
+          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+        }
       }
-      
+
       .el-button {
-        height: auto;
+        height: 72px;
+        padding: 0 24px;
+        font-size: 14px;
+
+        .el-icon {
+          margin-right: 4px;
+          font-size: 16px;
+        }
       }
     }
-    
+
     .input-tips {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       margin-top: 8px;
       font-size: 12px;
       color: #909399;
+      opacity: 0.8;
+
+      .el-icon {
+        font-size: 14px;
+        color: #409eff;
+      }
+    }
+  }
+
+  .section-title {
+    margin-bottom: 20px;
+    
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+    }
+  }
+
+  .product-info-section {
+    margin-bottom: 30px;
+  }
+
+  .quick-actions-section {
+    .quick-actions {
+      .el-button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        
+        .el-button {
+          width: 100%;
+          justify-content: flex-start;
+          
+          .el-icon {
+            margin-right: 8px;
+          }
+        }
+      }
     }
   }
 }
 
-// 打字动画
 .typing-indicator {
-  display: flex;
+  display: inline-flex;
   gap: 4px;
   padding: 12px 16px;
-  background-color: #fff;
+  background: #f9f9f9;
   border-radius: 8px;
-  
+
   span {
-    width: 8px;
-    height: 8px;
-    background-color: #dcdfe6;
+    width: 6px;
+    height: 6px;
+    background: #409eff;
     border-radius: 50%;
+    opacity: 0.6;
     animation: typing 1s infinite;
-    
+
     &:nth-child(2) { animation-delay: 0.2s; }
     &:nth-child(3) { animation-delay: 0.4s; }
   }
 }
 
 @keyframes typing {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .product-service-container {
+    .content-wrapper {
+      flex-direction: column;
+    }
+    
+    .right-column {
+      width: 100%;
+      height: 200px;
+    }
+    
+    .left-column {
+      flex: 1;
+    }
+  }
 }
 </style> 
