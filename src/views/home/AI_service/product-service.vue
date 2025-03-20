@@ -29,21 +29,8 @@
             <div class="welcome-message">
               <div class="assistant-avatar">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="assistantGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" style="stop-color:#60a5fa"/>
-                      <stop offset="100%" style="stop-color:#3b82f6"/>
-                    </linearGradient>
-                    <filter id="shadow">
-                      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                    </filter>
-                  </defs>
-                  <circle cx="50" cy="50" r="45" fill="url(#assistantGradient)" filter="url(#shadow)"/>
-                  <circle cx="35" cy="40" r="6" fill="white"/>
-                  <circle cx="65" cy="40" r="6" fill="white"/>
-                  <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
-                  <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
-                  <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                  <circle cx="50" cy="35" r="25" fill="#409EFF" />
+                  <path d="M90,100H10C10,70 40,65 50,65C60,65 90,70 90,100Z" fill="#409EFF" />
                 </svg>
               </div>
               <div class="welcome-content">
@@ -69,37 +56,14 @@
                 <div class="message-avatar">
                   <template v-if="msg.role === 'user'">
                     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="userGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style="stop-color:#4ade80"/>
-                          <stop offset="100%" style="stop-color:#22c55e"/>
-                        </linearGradient>
-                        <filter id="userShadow">
-                          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                        </filter>
-                      </defs>
-                      <circle cx="50" cy="50" r="45" fill="url(#userGradient)" filter="url(#userShadow)"/>
-                      <circle cx="50" cy="35" r="18" fill="white" opacity="0.9"/>
-                      <path d="M50 55 C30 55 20 65 20 85 L80 85 C80 65 70 55 50 55" fill="white" opacity="0.9"/>
+                      <circle cx="50" cy="35" r="25" fill="#FFB940" />
+                      <path d="M90,100H10C10,70 40,65 50,65C60,65 90,70 90,100Z" fill="#FFB940" />
                     </svg>
                   </template>
                   <template v-else>
                     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="assistantGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style="stop-color:#60a5fa"/>
-                          <stop offset="100%" style="stop-color:#3b82f6"/>
-                        </linearGradient>
-                        <filter id="shadow2">
-                          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                        </filter>
-                      </defs>
-                      <circle cx="50" cy="50" r="45" fill="url(#assistantGradient2)" filter="url(#shadow2)"/>
-                      <circle cx="35" cy="40" r="6" fill="white"/>
-                      <circle cx="65" cy="40" r="6" fill="white"/>
-                      <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
-                      <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
-                      <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                      <circle cx="50" cy="35" r="25" fill="#409EFF" />
+                      <path d="M90,100H10C10,70 40,65 50,65C60,65 90,70 90,100Z" fill="#409EFF" />
                     </svg>
                   </template>
                 </div>
@@ -109,26 +73,13 @@
                 </div>
               </div>
 
-              <!-- 加载状态 - 只在最后一条消息是用户消息且正在加载时显示 -->
+              <!-- 加载状态 -->
               <div v-if="isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user'" 
                    class="message assistant-message">
                 <div class="message-avatar">
                   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="assistantGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#60a5fa"/>
-                        <stop offset="100%" style="stop-color:#3b82f6"/>
-                      </linearGradient>
-                      <filter id="shadow3">
-                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                      </filter>
-                    </defs>
-                    <circle cx="50" cy="50" r="45" fill="url(#assistantGradient3)" filter="url(#shadow3)"/>
-                    <circle cx="35" cy="40" r="6" fill="white"/>
-                    <circle cx="65" cy="40" r="6" fill="white"/>
-                    <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
-                    <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
-                    <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                    <circle cx="50" cy="35" r="25" fill="#409EFF" />
+                    <path d="M90,100H10C10,70 40,65 50,65C60,65 90,70 90,100Z" fill="#409EFF" />
                   </svg>
                 </div>
                 <div class="message-body">
@@ -466,6 +417,9 @@ onMounted(() => {
         border-radius: 24px;
         overflow: hidden;
         flex-shrink: 0;
+        background: #fff;
+        padding: 2px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
         svg {
           width: 100%;
@@ -534,12 +488,9 @@ onMounted(() => {
           border-radius: 18px;
           overflow: hidden;
           flex-shrink: 0;
-          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-          transition: transform 0.2s ease;
-
-          &:hover {
-            transform: scale(1.05);
-          }
+          background: #fff;
+          padding: 2px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
           svg {
             width: 100%;

@@ -80,6 +80,12 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
             'Authorization': 'Bearer app-SPY0jYMegCqDuDlnCOAcL1qo'
           }
         },
+        '/table-api': {
+          target: 'http://115.190.30.196:2003',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/table-api/, ''),
+          secure: false
+        },
         '/ai': {
           target: 'http://115.190.30.196:2004',
           changeOrigin: true,

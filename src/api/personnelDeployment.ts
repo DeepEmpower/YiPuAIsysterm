@@ -97,7 +97,7 @@ export function usePersonnelDeployment() {
       console.log('发送的请求数据:', requestData)
 
       // 发送请求
-      const response = await fetch('/api/v1/chat-messages', {
+      const response = await fetch('http://115.190.30.196:2001/v1/chat-messages', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer app-XJWYvw9yq3Y2aGQgtFPICi1B',
@@ -137,8 +137,10 @@ export function usePersonnelDeployment() {
                 const data = JSON.parse(jsonStr)
                 console.log('Received SSE message:', data)
                 
-                if (data.answer) {
-                  content += data.answer
+                // 检查各种可能的响应字段
+                const text = data.answer || data.text || (data.data && data.data.text) || ''
+                if (text) {
+                  content += text
                   state.value.content = content
                 }
               } catch (e) {

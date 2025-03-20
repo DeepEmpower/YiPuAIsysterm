@@ -47,13 +47,10 @@ export const searchCustomTables = async (keyword: string): Promise<CustomTable[]
   state.value.error = null
   
   try {
-    const response = await fetch('/api/get_tables', {
+    const response = await fetch('/table-api/get_tables', {
       method: 'POST',
-      mode: 'cors',
-      credentials: 'omit',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         InputList: [keyword]
@@ -61,7 +58,9 @@ export const searchCustomTables = async (keyword: string): Promise<CustomTable[]
     })
 
     if (!response.ok) {
-      throw new Error('API请求失败')
+      const errorData = await response.json().catch(() => ({}))
+      console.error('API请求失败:', errorData)
+      throw new Error(errorData.message || 'API请求失败')
     }
 
     const data = await response.json()
@@ -109,6 +108,7 @@ export const searchCustomTables = async (keyword: string): Promise<CustomTable[]
       throw new Error('API返回数据格式异常：数据不是对象或数组')
     }
   } catch (error) {
+    console.error('搜索表格失败:', error)
     state.value.error = error instanceof Error ? error.message : '搜索失败'
     throw error
   } finally {
