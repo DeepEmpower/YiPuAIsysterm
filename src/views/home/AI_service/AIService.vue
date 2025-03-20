@@ -22,6 +22,20 @@
 
     <!-- AI助手卡片列表 -->
     <div class="ai-cards-container">
+        <!-- 产品客服助手 -->
+        <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'aftersales'" @click="navigateToAssistant('product-service')">
+          <div class="card-avatar">
+            <img src="@/assets/images/avatars/avatar6.png" alt="产品客服助手">
+          </div>
+        <div class="card-content">
+          <h3 class="assistant-name">产品客服助手</h3>
+          <p class="assistant-desc">专业解答产品使用问题，提供技术支持和操作指导，确保用户获得最佳产品体验。</p>
+          <div class="efficiency-stats">
+            <span class="stat-item">响应速度 <span class="highlight">1分钟</span></span>
+            <span class="stat-item">解决率 <span class="highlight">94%</span></span>
+          </div>
+        </div>
+      </div>
       <!-- 智能问答助手 -->
       <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'consultation'" @click="navigateToAssistant('smart-qa')">
         <div class="card-avatar">
@@ -97,20 +111,8 @@
         </div>
       </div>
 
-      <!-- 产品客服助手 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'aftersales'" @click="navigateToAssistant('product-service')">
-        <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar6.png" alt="产品客服助手">
-        </div>
-        <div class="card-content">
-          <h3 class="assistant-name">产品客服助手</h3>
-          <p class="assistant-desc">专业解答产品使用问题，提供技术支持和操作指导，确保用户获得最佳产品体验。</p>
-          <div class="efficiency-stats">
-            <span class="stat-item">响应速度 <span class="highlight">1分钟</span></span>
-            <span class="stat-item">解决率 <span class="highlight">94%</span></span>
-          </div>
-        </div>
-      </div>
+
+
     </div>
   </div>
 </template>

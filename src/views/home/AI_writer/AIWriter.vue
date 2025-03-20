@@ -38,7 +38,7 @@
       </div>
 
       <!-- 产品策划编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="navigateToAssistant('product-planning')">
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="navigateToAssistant('product-planning')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar2.png" alt="产品策划编写">
         </div>
@@ -53,7 +53,7 @@
       </div>
 
       <!-- 销售报告编写 -->
-      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'content'" @click="navigateToAssistant('sales-report')">
+      <div class="ai-card" v-if="activeTab === 'all' || activeTab === 'document'" @click="navigateToAssistant('sales-report')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar3.png" alt="销售报告编写">
         </div>
@@ -67,106 +67,89 @@
         </div>
       </div>
 
-      <!-- 以下是分类下的卡片，保持不变 -->
-      
-      <!-- 文档编写分类下的卡片 -->
-      <div class="ai-card" v-if="activeTab === 'document'" @click="navigateToAssistant('meeting')">
+      <!-- 内容生成分类下的卡片 -->
+      <div class="ai-card" v-if="activeTab === 'content' || activeTab === 'all'" @click="navigateToAssistant('marketing-content')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar4.png" alt="会议纪要助手">
+          <img src="@/assets/images/avatars/avatar7.png" alt="营销文案助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">会议纪要助手</h3>
-          <p class="assistant-desc">30秒自动整理会议记录，快速生成规范会议纪要，突出重点决议与行动项。</p>
+          <h3 class="assistant-name">营销文案助手</h3>
+          <p class="assistant-desc">生成吸引人的营销文案，包括产品描述、活动宣传、广告语等。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">93%</span></span>
-            <span class="stat-item">提效 <span class="highlight">8.5倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">88%</span></span>
+            <span class="stat-item">提效 <span class="highlight">20倍</span></span>
           </div>
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'document'" @click="navigateToAssistant('report')">
+      <div class="ai-card" v-if="activeTab === 'content' || activeTab === 'all'" @click="navigateToAssistant('social-media')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar5.png" alt="工作报告助手">
+          <img src="@/assets/images/avatars/avatar8.png" alt="社媒内容助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">工作报告助手</h3>
-          <p class="assistant-desc">2分钟完成日报、周报、月报生成，数据可视化呈现，一键生成专业报告。</p>
+          <h3 class="assistant-name">社媒内容助手</h3>
+          <p class="assistant-desc">生成社交媒体内容，包括文章、帖子、评论等，提高社交媒体影响力。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">89%</span></span>
-            <span class="stat-item">提效 <span class="highlight">7.2倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">85%</span></span>
+            <span class="stat-item">提效 <span class="highlight">18倍</span></span>
           </div>
         </div>
       </div>
 
-      <!-- 内容生成分类下更多卡片 -->
-      <div class="ai-card" v-if="activeTab === 'content'" @click="navigateToAssistant('proposal')">
+      <!-- 审核校对分类下的卡片 -->
+      <div class="ai-card" v-if="activeTab === 'review' || activeTab === 'all'" @click="navigateToAssistant('grammar-check')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar6.png" alt="方案撰写助手">
+          <img src="@/assets/images/avatars/avatar9.png" alt="语法校对助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">方案撰写助手</h3>
-          <p class="assistant-desc">3分钟输出完整项目方案，包含目标、计划、预算和风险评估，专业水准一键生成。</p>
+          <h3 class="assistant-name">语法校对助手</h3>
+          <p class="assistant-desc">智能检查文章语法错误，提供修改建议，确保文章准确性。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">92%</span></span>
-            <span class="stat-item">提效 <span class="highlight">11.5倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">80%</span></span>
+            <span class="stat-item">提效 <span class="highlight">15倍</span></span>
           </div>
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'content'" @click="navigateToAssistant('notice')">
+      <div class="ai-card" v-if="activeTab === 'review' || activeTab === 'all'" @click="navigateToAssistant('style-check')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar7.png" alt="公告通知助手">
+          <img src="@/assets/images/avatars/avatar10.png" alt="文风校对助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">公告通知助手</h3>
-          <p class="assistant-desc">1分钟生成企业通知、公告、邮件，语言规范专业，满足各类正式场合需求。</p>
+          <h3 class="assistant-name">文风校对助手</h3>
+          <p class="assistant-desc">检查并优化文章风格，确保文章表达统一、专业。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">86%</span></span>
-            <span class="stat-item">提效 <span class="highlight">6.8倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">75%</span></span>
+            <span class="stat-item">提效 <span class="highlight">12倍</span></span>
           </div>
         </div>
       </div>
 
-      <!-- 审核校对 -->
-      <div class="ai-card" v-if="activeTab === 'review'" @click="navigateToAssistant('proofread')">
+      <!-- 格式排版分类下的卡片 -->
+      <div class="ai-card" v-if="activeTab === 'format' || activeTab === 'all'" @click="navigateToAssistant('document-format')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar8.png" alt="文档校对助手">
+          <img src="@/assets/images/avatars/avatar11.png" alt="文档排版助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">文档校对助手</h3>
-          <p class="assistant-desc">30秒检查3000字文档，精准识别错别字、语法错误和表达不畅，提供专业修改建议。</p>
+          <h3 class="assistant-name">文档排版助手</h3>
+          <p class="assistant-desc">一键美化文档排版，支持多种格式模板，让文档更专业。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">94%</span></span>
-            <span class="stat-item">提效 <span class="highlight">16倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">70%</span></span>
+            <span class="stat-item">提效 <span class="highlight">10倍</span></span>
           </div>
         </div>
       </div>
 
-      <!-- 格式排版 -->
-      <div class="ai-card" v-if="activeTab === 'format'" @click="navigateToAssistant('format')">
+      <div class="ai-card" v-if="activeTab === 'format' || activeTab === 'all'" @click="navigateToAssistant('presentation-format')">
         <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar9.png" alt="排版美化助手">
+          <img src="@/assets/images/avatars/avatar12.png" alt="演示排版助手">
         </div>
         <div class="card-content">
-          <h3 class="assistant-name">排版美化助手</h3>
-          <p class="assistant-desc">2分钟智能排版整个文档，规范字体、段落、标题层级，美化页面布局，导出多种格式。</p>
+          <h3 class="assistant-name">演示排版助手</h3>
+          <p class="assistant-desc">优化演示文稿排版，生成专业的PPT模板和布局。</p>
           <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">83%</span></span>
-            <span class="stat-item">提效 <span class="highlight">5.8倍</span></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="ai-card" v-if="activeTab === 'format'" @click="navigateToAssistant('contract')">
-        <div class="card-avatar">
-          <img src="@/assets/images/avatars/avatar10.png" alt="合同格式助手">
-        </div>
-        <div class="card-content">
-          <h3 class="assistant-name">合同格式助手</h3>
-          <p class="assistant-desc">10分钟标准化处理合同文本，自动校对合同条款，确保格式统一，提高法律文档规范性。</p>
-          <div class="efficiency-stats">
-            <span class="stat-item">最高省时比 <span class="highlight">78%</span></span>
-            <span class="stat-item">提效 <span class="highlight">4.6倍</span></span>
+            <span class="stat-item">最高省时比 <span class="highlight">65%</span></span>
+            <span class="stat-item">提效 <span class="highlight">8倍</span></span>
           </div>
         </div>
       </div>
