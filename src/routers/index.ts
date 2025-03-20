@@ -78,7 +78,7 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
     meta: { title: 'AI员工', icon: 'Calendar' }, // 设置菜单标题和图标
     children: [ // 子路由配置
       {
-        path: '/home/AI_writer',
+        path: '/home/AI_writer/AIWriter',
         component: () => import('@/views/home/AI_writer/AIWriter.vue'),
         name: 'AIWriter',
         meta: { title: 'AI文员', keepAlive: true, icon: 'Document' },

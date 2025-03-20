@@ -6,11 +6,11 @@ export const useUserStore = defineStore({
   // state: 返回对象的函数
   state: () => ({
     // 登录token
-    token: null,
+    token: localStorage.getItem('token') || null,
     // 登录用户信息
-    userInfo: {},
+    userInfo: JSON.parse(localStorage.getItem('userInfo') || '{}'),
     // 角色
-    roles: localStorage.roles ? JSON.parse(localStorage.roles) : [],
+    roles: localStorage.getItem('roles') ? JSON.parse(localStorage.getItem('roles') || '[]') : [],
   }),
   getters: {},
   // 可以同步 也可以异步
@@ -21,6 +21,8 @@ export const useUserStore = defineStore({
       return new Promise(async (resolve, reject) => {
         this.token = username
         this.userInfo = userInfo
+        localStorage.setItem('token', username)
+        localStorage.setItem('userInfo', JSON.stringify(userInfo))
         await this.getRoles()
         resolve(username)
       })
@@ -30,7 +32,7 @@ export const useUserStore = defineStore({
       return new Promise((resolve, reject) => {
         // 获取权限列表 默认就是超级管理员，因为没有进行接口请求 写死
         this.roles = ['admin']
-        localStorage.roles = JSON.stringify(this.roles)
+        localStorage.setItem('roles', JSON.stringify(this.roles))
         resolve(this.roles)
       })
     },
@@ -38,6 +40,7 @@ export const useUserStore = defineStore({
     getInfo(roles) {
       return new Promise((resolve, reject) => {
         this.roles = roles
+        localStorage.setItem('roles', JSON.stringify(roles))
         resolve(roles)
       })
     },
@@ -47,6 +50,9 @@ export const useUserStore = defineStore({
         this.token = null
         this.userInfo = {}
         this.roles = []
+        localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        localStorage.removeItem('roles')
         resolve(null)
       })
     },
