@@ -78,10 +78,11 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
     meta: { title: 'AI员工', icon: 'Calendar' }, // 设置菜单标题和图标
     children: [ // 子路由配置
       {
-        path: '/home/AI_writer/AIWriter', // AI文员路径
-        component: () => import('@/views/home/AI_writer/AIWriter.vue'), // 懒加载AI文员组件
-        name: 'AIWriter', // 路由名称
-        meta: { title: 'AI文员', keepAlive: true, icon: 'Document' }, // 设置标题、缓存和图标
+        path: '/home/AI_writer',
+        component: () => import('@/views/home/AI_writer/AIWriter.vue'),
+        name: 'AIWriter',
+        meta: { title: 'AI文员', keepAlive: true, icon: 'Document' },
+        hidden: false,
       },
       {
         path: '/home/AI_writer/feasibility-report',
@@ -105,24 +106,11 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
-        path: '/home/AI_writer/custom-assistant',
-        component: () => import('@/views/home/AI_writer/CustomAssistant.vue'),
-        name: 'CustomAssistant',
-        meta: { title: '自定义AI助手', keepAlive: true, icon: 'Document' },
-        hidden: true,
-      },
-      {
-        path: '/home/AI_writer/custom-creation',
-        component: () => import('@/views/home/AI_writer/CustomCreation.vue'),
-        name: 'CustomCreation',
-        meta: { title: '创建自定义助手', keepAlive: true, icon: 'Document' },
-        hidden: true,
-      },
-      {
-        path: '/home/AI_hr/AIHr.vue', // AI人力路径
-        component: () => import('@/views/home/AI_hr/AIHr.vue'), // 懒加载AI人力组件
-        name: 'achieve', // 路由名称
-        meta: { title: 'AI人力', icon: 'MenuIcon' }, // 设置标题和图标
+        path: '/home/AI_hr',
+        component: () => import('@/views/home/AI_hr/AIHr.vue'),
+        name: 'AIHr',
+        meta: { title: 'AI人力', keepAlive: true, icon: 'User' },
+        hidden: false,
       },
       {
         path: '/home/AI_hr/resume-screening',
@@ -160,10 +148,24 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
-        path: '/home/AI_hr/custom',
-        component: () => import('@/views/home/AI_hr/CustomAssistant.vue'),
-        name: 'HRCustomAssistant',
+        path: '/home/AI_service',
+        component: () => import('@/views/home/AI_service/AIService.vue'),
+        name: 'AIService',
+        meta: { title: 'AI客服', keepAlive: true, icon: 'Service' },
+        hidden: false,
+      },
+      {
+        path: '/home/AI_service/custom-assistant',
+        component: () => import('@/views/home/AI_service/CustomAssistant.vue'),
+        name: 'ServiceCustomAssistant',
         meta: { title: '自定义AI助手', keepAlive: true, icon: 'Document' },
+        hidden: true,
+      },
+      {
+        path: '/home/AI_service/custom-creation',
+        component: () => import('@/views/home/AI_service/CustomCreation.vue'),
+        name: 'ServiceCustomCreation',
+        meta: { title: '创建自定义助手', keepAlive: true, icon: 'Document' },
         hidden: true,
       },
       {
@@ -172,12 +174,6 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         name: 'examine', // 路由名称
         meta: { title: '审稿', keepAlive: true, icon: 'FolderChecked' }, // 设置标题、缓存和图标
       }, 
-      {
-        path: '/home/AI_service/AIService.vue', // AI客服路径
-        component: () => import('@/views/home/AI_service/AIService.vue'), // 懒加载AI客服组件
-        name: 'AIService',
-        meta: { title: 'AI客服', keepAlive: true, icon: 'Service' },
-      },
       {
         path: '/home/AI_service/smart-qa',
         component: () => import('@/views/home/AI_service/smart-qa.vue'),
@@ -221,18 +217,26 @@ export const constantRoutes: Array<RouteRecordRaw & extendRoute> = [
         hidden: true,
       },
       {
-        path: '/home/AI_service/custom-assistant',
-        component: () => import('@/views/home/AI_service/custom-assistant.vue'),
-        name: 'CustomAssistant',
-        meta: { title: '自定义助手', keepAlive: true, icon: 'Document' },
-        hidden: true,
-      },
-      {
         path: '/home/voice', // 语音生成路径
         component: () => import('@/views/home/voice.vue'), // 懒加载语音生成组件
         name: 'voice', // 路由名称
         meta: { title: 'AI播报员', keepAlive: true, icon: 'Collection' }, // 设置标题、缓存和图标
       }, 
+      {
+        path: '/home/custom_assistant',
+        component: () => import('@/views/home/CustomAssistant.vue'),
+        name: 'CustomAssistant',
+        meta: { title: '自定义助手', keepAlive: true, icon: 'Plus' },
+        hidden: false,
+      },
+      {
+        path: '/home/custom_assistant/creation',
+        component: () => import('@/views/home/CustomCreation.vue'),
+        name: 'CustomCreation',
+        meta: { title: '创建自定义助手', keepAlive: true, icon: 'Plus' },
+        hidden: true,
+      },
+      
     ],
   },
 ]

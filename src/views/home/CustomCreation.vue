@@ -283,16 +283,15 @@ const saveAssistant = () => {
 
 // 返回自定义AI员工列表
 const goToList = () => {
-  router.push('/home/AI_writer/AIWriter');
+  router.push('/home/custom_assistant');
 };
 
 // 去知识库训练
 const goToKnowledgeTraining = () => {
   // 此处可以导航到知识库训练页面
-  // 暂时先返回AI文员页面
-  router.push('/home/AI_writer/AIWriter');
+  router.push('/home/custom_assistant');
   // 实际应用中应该导航到知识库训练页面
-  // router.push('/home/AI_writer/knowledge-training');
+  // router.push('/home/custom_assistant/knowledge-training');
 };
 </script>
 

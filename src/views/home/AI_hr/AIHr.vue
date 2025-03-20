@@ -96,47 +96,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 自定义助手卡片列表 -->
-      <div 
-        v-for="(assistant, index) in customAssistants" 
-        :key="'custom-' + index" 
-        class="ai-card custom-assistant-card"
-        v-if="activeTab === 'all' || activeTab === 'custom'"
-        @click="openAssistant(assistant.id)"
-      >
-        <div class="card-avatar">
-          <img :src="assistant.avatar || '@/assets/images/avatars/custom.png'" :alt="assistant.title">
-        </div>
-        <div class="card-content">
-          <h3 class="assistant-name">{{ assistant.title }}</h3>
-          <p class="assistant-desc">{{ assistant.description }}</p>
-          <div class="efficiency-stats">
-            <span class="stat-item">自定义助手</span>
-            <span class="custom-actions">
-              <el-button 
-                type="text" 
-                icon="Edit" 
-                @click.stop="editCustomAssistant(assistant, index)"
-              ></el-button>
-              <el-button 
-                type="text" 
-                icon="Delete" 
-                @click.stop="deleteCustomAssistant(index)"
-              ></el-button>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 添加自定义助手卡片 -->
-      <div class="ai-card add-assistant-card" v-if="activeTab === 'custom' || activeTab === 'all'" @click="navigateToAssistant('custom-assistant')">
-        <div class="add-content">
-          <el-icon class="add-icon"><Plus /></el-icon>
-          <h3>创建自定义AI助手</h3>
-          <p>定制专属领域的AI人力助手，上传知识库，打造私人助理</p>
-        </div>
-      </div>
     </div>
   </div>
 </template>

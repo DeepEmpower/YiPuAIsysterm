@@ -12,7 +12,6 @@
         <el-tab-pane label="内容生成" name="content"></el-tab-pane>
         <el-tab-pane label="审核校对" name="review"></el-tab-pane>
         <el-tab-pane label="格式排版" name="format"></el-tab-pane>
-        <el-tab-pane label="自定义助手" name="custom"></el-tab-pane>
       </el-tabs>
     </div>
 
@@ -71,7 +70,7 @@
       <!-- 以下是分类下的卡片，保持不变 -->
       
       <!-- 文档编写分类下的卡片 -->
-      <div class="ai-card" v-if="activeTab === 'document'" @click="openAssistant('meeting')">
+      <div class="ai-card" v-if="activeTab === 'document'" @click="navigateToAssistant('meeting')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar4.png" alt="会议纪要助手">
         </div>
@@ -85,7 +84,7 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'document'" @click="openAssistant('report')">
+      <div class="ai-card" v-if="activeTab === 'document'" @click="navigateToAssistant('report')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar5.png" alt="工作报告助手">
         </div>
@@ -100,7 +99,7 @@
       </div>
 
       <!-- 内容生成分类下更多卡片 -->
-      <div class="ai-card" v-if="activeTab === 'content'" @click="openAssistant('proposal')">
+      <div class="ai-card" v-if="activeTab === 'content'" @click="navigateToAssistant('proposal')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar6.png" alt="方案撰写助手">
         </div>
@@ -114,7 +113,7 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'content'" @click="openAssistant('notice')">
+      <div class="ai-card" v-if="activeTab === 'content'" @click="navigateToAssistant('notice')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar7.png" alt="公告通知助手">
         </div>
@@ -129,7 +128,7 @@
       </div>
 
       <!-- 审核校对 -->
-      <div class="ai-card" v-if="activeTab === 'review'" @click="openAssistant('proofread')">
+      <div class="ai-card" v-if="activeTab === 'review'" @click="navigateToAssistant('proofread')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar8.png" alt="文档校对助手">
         </div>
@@ -144,7 +143,7 @@
       </div>
 
       <!-- 格式排版 -->
-      <div class="ai-card" v-if="activeTab === 'format'" @click="openAssistant('format')">
+      <div class="ai-card" v-if="activeTab === 'format'" @click="navigateToAssistant('format')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar9.png" alt="排版美化助手">
         </div>
@@ -158,7 +157,7 @@
         </div>
       </div>
 
-      <div class="ai-card" v-if="activeTab === 'format'" @click="openAssistant('contract')">
+      <div class="ai-card" v-if="activeTab === 'format'" @click="navigateToAssistant('contract')">
         <div class="card-avatar">
           <img src="@/assets/images/avatars/avatar10.png" alt="合同格式助手">
         </div>
@@ -169,47 +168,6 @@
             <span class="stat-item">最高省时比 <span class="highlight">78%</span></span>
             <span class="stat-item">提效 <span class="highlight">4.6倍</span></span>
           </div>
-        </div>
-      </div>
-
-      <!-- 自定义助手卡片列表 -->
-      <div 
-        v-for="(assistant, index) in customAssistants" 
-        :key="'custom-' + index" 
-        class="ai-card custom-assistant-card"
-        v-if="activeTab === 'all' || activeTab === 'custom'"
-        @click="openAssistant(assistant.id)"
-      >
-        <div class="card-avatar">
-          <img :src="assistant.avatar || '@/assets/images/avatars/custom.png'" :alt="assistant.title">
-        </div>
-        <div class="card-content">
-          <h3 class="assistant-name">{{ assistant.title }}</h3>
-          <p class="assistant-desc">{{ assistant.description }}</p>
-          <div class="efficiency-stats">
-            <span class="stat-item">自定义助手</span>
-            <span class="custom-actions">
-              <el-button 
-                type="text" 
-                icon="Edit" 
-                @click.stop="editCustomAssistant(assistant, index)"
-              ></el-button>
-              <el-button 
-                type="text" 
-                icon="Delete" 
-                @click.stop="deleteCustomAssistant(index)"
-              ></el-button>
-            </span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 添加自定义助手卡片 -->
-      <div class="ai-card add-assistant-card" v-if="activeTab === 'custom' || activeTab === 'all'" @click="navigateToAssistant('custom-assistant')">
-        <div class="add-content">
-          <el-icon class="add-icon"><Plus /></el-icon>
-          <h3>创建自定义AI助手</h3>
-          <p>定制专属领域的AI文员，上传知识库，打造私人助理</p>
         </div>
       </div>
     </div>
@@ -290,95 +248,18 @@
         </div>
       </div>
     </el-dialog>
-
-    <!-- 自定义助手配置对话框 -->
-    <el-dialog
-      v-model="customAssistantDialogVisible"
-      :title="editingCustomAssistant.id ? '编辑助手' : '创建自定义助手'"
-      width="50%"
-    >
-      <el-form :model="editingCustomAssistant" label-width="120px">
-        <el-form-item label="助手名称" required>
-          <el-input v-model="editingCustomAssistant.title" placeholder="请输入助手名称"></el-input>
-        </el-form-item>
-        
-        <el-form-item label="助手描述" required>
-          <el-input 
-            type="textarea" 
-            v-model="editingCustomAssistant.description" 
-            placeholder="请描述这个助手的功能和专长"
-            :rows="3"
-          ></el-input>
-        </el-form-item>
-        
-        <el-form-item label="助手专长领域">
-          <el-select v-model="editingCustomAssistant.domain" placeholder="请选择专长领域">
-            <el-option label="文档写作" value="document"></el-option>
-            <el-option label="内容创作" value="content"></el-option>
-            <el-option label="数据分析" value="data"></el-option>
-            <el-option label="营销文案" value="marketing"></el-option>
-            <el-option label="技术文档" value="technical"></el-option>
-            <el-option label="其他" value="other"></el-option>
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="生成提示">
-          <el-input 
-            type="textarea" 
-            v-model="editingCustomAssistant.placeholder" 
-            placeholder="当用户使用这个助手时的输入提示内容"
-            :rows="3"
-          ></el-input>
-        </el-form-item>
-        
-        <el-form-item label="头像">
-          <el-select v-model="editingCustomAssistant.avatarIndex" placeholder="选择头像">
-            <el-option 
-              v-for="(image, index) in avatarOptions" 
-              :key="index" 
-              :label="`头像${index + 1}`" 
-              :value="index"
-            >
-              <div style="display: flex; align-items: center;">
-                <img :src="image" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                <span>头像{{ index + 1 }}</span>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="自定义选项">
-          <el-checkbox v-model="editingCustomAssistant.options.autoFormat">自动格式化</el-checkbox>
-          <el-checkbox v-model="editingCustomAssistant.options.supportAttachments">支持附件</el-checkbox>
-          <el-checkbox v-model="editingCustomAssistant.options.advancedAI">使用高级AI引擎</el-checkbox>
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="customAssistantDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveCustomAssistant">保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
 import { Plus, Edit, Delete } from '@element-plus/icons-vue';
 
 const router = useRouter();
-
-// 当前激活的标签
 const activeTab = ref('all');
-
-// 对话框显示状态
 const dialogVisible = ref(false);
-
-// 文档是否已生成
 const documentGenerated = ref(false);
 
 // 当前选中的助手
@@ -411,34 +292,6 @@ const generatedDocument = ref({
   content: '',
   type: ''
 });
-
-// 新增的状态变量
-const customAssistants = ref([]);
-const customAssistantDialogVisible = ref(false);
-const editingCustomAssistant = ref({
-  id: '',
-  title: '',
-  description: '',
-  domain: 'document',
-  avatar: '',
-  avatarIndex: 0,
-  placeholder: '',
-  options: {
-    autoFormat: true,
-    supportAttachments: false,
-    advancedAI: false
-  }
-});
-const editingIndex = ref(-1);
-
-// 头像选项
-const avatarOptions = [
-  '@/assets/images/avatars/custom1.png',
-  '@/assets/images/avatars/custom2.png',
-  '@/assets/images/avatars/custom3.png',
-  '@/assets/images/avatars/custom4.png',
-  '@/assets/images/avatars/custom5.png',
-];
 
 // 获取分类标题
 const getCategoryTitle = () => {
@@ -479,17 +332,8 @@ const getInputPlaceholder = () => {
   return placeholders[currentAssistant.id] || '请输入文档内容...';
 };
 
-// 打开助手对话框
-const openAssistant = (type) => {
-  currentAssistant.value = getAssistantInfo(type);
-  documentConfig.value.content = '';
-  documentConfig.value.type = type;
-  documentGenerated.value = false;
-  dialogVisible.value = true;
-};
-
 // 导航到助手专属页面
-const navigateToAssistant = (route) => {
+const navigateToAssistant = (route: string) => {
   router.push(`/home/AI_writer/${route}`);
 };
 
@@ -664,113 +508,6 @@ const generateMockDocument = () => {
     content: `<p>这是一份基于您的输入生成的文档。</p><p>${documentConfig.value.content}</p>`
   };
 };
-
-// 自定义助手相关函数
-// 打开自定义助手对话框
-const openCustomAssistantDialog = () => {
-  editingCustomAssistant.value = {
-    id: '',
-    title: '',
-    description: '',
-    domain: 'document',
-    avatar: avatarOptions[0],
-    avatarIndex: 0,
-    placeholder: '',
-    options: {
-      autoFormat: true,
-      supportAttachments: false,
-      advancedAI: false
-    }
-  };
-  editingIndex.value = -1;
-  customAssistantDialogVisible.value = true;
-};
-
-// 编辑自定义助手
-const editCustomAssistant = (assistant, index) => {
-  editingCustomAssistant.value = { ...assistant };
-  editingCustomAssistant.value.avatarIndex = avatarOptions.findIndex(avatar => avatar === assistant.avatar) || 0;
-  editingIndex.value = index;
-  customAssistantDialogVisible.value = true;
-};
-
-// 删除自定义助手
-const deleteCustomAssistant = (index) => {
-  ElMessageBox.confirm(
-    '确定要删除这个自定义助手吗？',
-    '删除确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(() => {
-      customAssistants.value.splice(index, 1);
-      saveCustomAssistantsToStorage();
-      ElMessage.success('已删除自定义助手');
-    })
-    .catch(() => {
-      // 用户取消删除操作
-    });
-};
-
-// 保存自定义助手
-const saveCustomAssistant = () => {
-  if (!editingCustomAssistant.value.title.trim()) {
-    ElMessage.warning('请输入助手名称');
-    return;
-  }
-  
-  if (!editingCustomAssistant.value.description.trim()) {
-    ElMessage.warning('请输入助手描述');
-    return;
-  }
-  
-  // 生成唯一ID
-  if (!editingCustomAssistant.value.id) {
-    editingCustomAssistant.value.id = 'custom-' + Date.now();
-  }
-  
-  // 设置选择的头像
-  editingCustomAssistant.value.avatar = avatarOptions[editingCustomAssistant.value.avatarIndex];
-  
-  if (editingIndex.value >= 0) {
-    // 更新现有助手
-    customAssistants.value[editingIndex.value] = { ...editingCustomAssistant.value };
-  } else {
-    // 添加新助手
-    customAssistants.value.push({ ...editingCustomAssistant.value });
-  }
-  
-  // 保存到本地存储
-  saveCustomAssistantsToStorage();
-  
-  customAssistantDialogVisible.value = false;
-  ElMessage.success(editingIndex.value >= 0 ? '助手更新成功' : '助手创建成功');
-};
-
-// 保存到本地存储
-const saveCustomAssistantsToStorage = () => {
-  localStorage.setItem('customAssistants', JSON.stringify(customAssistants.value));
-};
-
-// 从本地存储加载
-const loadCustomAssistantsFromStorage = () => {
-  const saved = localStorage.getItem('customAssistants');
-  if (saved) {
-    try {
-      customAssistants.value = JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to parse custom assistants from storage', e);
-    }
-  }
-};
-
-// 组件挂载时加载自定义助手
-onMounted(() => {
-  loadCustomAssistantsFromStorage();
-});
 </script>
 
 <style scoped lang="scss">

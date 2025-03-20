@@ -72,7 +72,7 @@ const router = useRouter();
 
 // 开始创建按钮点击事件处理
 const startCreation = () => {
-  router.push('/home/AI_writer/custom-creation');
+  router.push('/home/custom_assistant/creation');
 };
 </script>
 
