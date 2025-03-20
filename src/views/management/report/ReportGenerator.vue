@@ -225,7 +225,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, nextTick } from 'vue';
 import { DocumentCopy, Document, Search, DataAnalysis, ChatLineRound, User, Plus, InfoFilled, RefreshRight, Download, Back, Loading } from '@element-plus/icons-vue';
 import { ElMessage, ElLoading } from 'element-plus';
 import { useReportRecommendation } from '@/api/reportRecommendation';
@@ -436,18 +436,26 @@ const handleGenerateReport = async () => {
   }
 
   try {
-    // 调用生成报表API
+    // 调用生成报表API，添加进度回调
     const response = await generateReport({
       prompt: tableSearchInput.value,
       TableList: selectedTables,
       do_recom: false
+    }, (content) => {
+      // 实时更新预览内容
+      previewContent.value = content
+      // 自动滚动到底部
+      nextTick(() => {
+        const previewElement = document.querySelector('.report-content')
+        if (previewElement) {
+          previewElement.scrollTop = previewElement.scrollHeight
+        }
+      })
     })
 
     // 处理返回结果
     if (response.status === 'success') {
       ElMessage.success('报表生成成功')
-      // 更新预览内容
-      previewContent.value = response.data
       reportGenerated.value = true
     } else {
       throw new Error(response.message || '生成报表失败')

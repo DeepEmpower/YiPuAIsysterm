@@ -10,7 +10,7 @@ export interface GenerateReportRequest {
 // 定义生成报表的响应接口
 export interface GenerateReportResponse {
   status: string
-  data: string  // 修改为string类型，因为返回的是Markdown表格文本
+  data: string
   message?: string
 }
 
@@ -18,7 +18,7 @@ export interface GenerateReportResponse {
 export interface GenerationState {
   isGenerating: boolean
   error: string | null
-  previewContent: string | null  // 修改为string类型
+  previewContent: string | null
 }
 
 // 创建响应式状态
@@ -29,9 +29,13 @@ const state = ref<GenerationState>({
 })
 
 // 生成报表的函数
-export const generateReport = async (params: GenerateReportRequest): Promise<GenerateReportResponse> => {
+export const generateReport = async (
+  params: GenerateReportRequest,
+  onProgress?: (content: string) => void
+): Promise<GenerateReportResponse> => {
   state.value.isGenerating = true
   state.value.error = null
+  state.value.previewContent = ''
   
   try {
     const response = await fetch('/generate', {
@@ -46,17 +50,34 @@ export const generateReport = async (params: GenerateReportRequest): Promise<Gen
       throw new Error('生成报表请求失败')
     }
 
-    // 直接获取文本响应，而不是尝试解析JSON
-    const textData = await response.text()
-    console.log('生成报表API返回数据:', textData)
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法获取响应流')
+    }
+
+    let accumulatedContent = ''
     
-    // 更新预览内容
-    state.value.previewContent = textData
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      // 将Uint8Array转换为字符串
+      const chunk = new TextDecoder().decode(value)
+      accumulatedContent += chunk
+      
+      // 更新预览内容
+      state.value.previewContent = accumulatedContent
+      
+      // 调用进度回调
+      if (onProgress) {
+        onProgress(accumulatedContent)
+      }
+    }
     
-    // 返回包装后的响应
+    // 返回最终结果
     return {
       status: 'success',
-      data: textData
+      data: accumulatedContent
     }
   } catch (error) {
     state.value.error = error instanceof Error ? error.message : '生成报表失败'
