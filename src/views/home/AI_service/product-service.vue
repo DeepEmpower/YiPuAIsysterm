@@ -148,12 +148,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Back, Delete, Position, InfoFilled, Document, VideoPlay, QuestionFilled } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import { sendStreamingMessage } from '@/api/customerService'
 
 // 初始化markdown解析器
 const md = new MarkdownIt({
@@ -176,6 +177,10 @@ const messages = ref<Array<{
 const userAvatar = '/src/assets/images/avatars/user.png'
 const assistantAvatar = '/src/assets/images/avatars/avatar6.png'
 
+// 用户标识
+const userId = ref(`user-${Date.now()}`)
+const conversationId = ref('')
+
 // 返回上一页
 const goBack = () => router.back()
 
@@ -191,6 +196,7 @@ const handleClearChat = () => {
     }
   ).then(() => {
     messages.value = []
+    conversationId.value = ''
     ElMessage.success('对话已清空')
   }).catch(() => {})
 }
@@ -215,29 +221,47 @@ const handleSendMessage = async () => {
   // 设置加载状态
   isLoading.value = true
 
+  // 创建临时消息对象
+  const tempMessage = {
+    role: 'assistant' as const,
+    content: '',
+    timestamp: Date.now()
+  }
+  messages.value.push(tempMessage)
+
   try {
-    // 模拟API响应
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const response = `感谢您的咨询！让我为您详细说明：
+    // 使用流式响应
+    const cleanup = sendStreamingMessage(
+      content,
+      {
+        onMessage: (text) => {
+          // 更新消息内容
+          tempMessage.content = text
+          scrollToBottom()
+        },
+        onError: (error) => {
+          console.error('消息发送失败:', error)
+          ElMessage.error('消息发送失败，请重试')
+          messages.value = messages.value.filter(msg => msg !== tempMessage)
+        },
+        onComplete: () => {
+          isLoading.value = false
+          scrollToBottom()
+        }
+      },
+      conversationId.value,
+      userId.value
+    )
 
-1. 首先，请告诉我您遇到的具体问题
-2. 我会根据您的情况提供个性化解决方案
-3. 如果需要，我可以提供更详细的操作指南
-
-您可以随时告诉我更多细节，我会为您提供更精准的帮助。`
-
-    // 添加助手回复
-    messages.value.push({
-      role: 'assistant',
-      content: response,
-      timestamp: Date.now()
+    // 组件卸载时清理
+    onUnmounted(() => {
+      cleanup()
     })
   } catch (error) {
+    console.error('发送消息失败:', error)
     ElMessage.error('消息发送失败，请重试')
-  } finally {
+    messages.value = messages.value.filter(msg => msg !== tempMessage)
     isLoading.value = false
-    await nextTick()
-    scrollToBottom()
   }
 }
 
@@ -268,7 +292,7 @@ const scrollToBottom = () => {
   }
 }
 
-// 组件挂载时滚动到底部
+// 组件挂载时初始化
 onMounted(() => {
   scrollToBottom()
 })
