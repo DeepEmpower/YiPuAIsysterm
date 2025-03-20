@@ -28,7 +28,23 @@
             <!-- 欢迎消息 -->
             <div class="welcome-message">
               <div class="assistant-avatar">
-                <img :src="assistantAvatar" alt="助手">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="assistantGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#60a5fa"/>
+                      <stop offset="100%" style="stop-color:#3b82f6"/>
+                    </linearGradient>
+                    <filter id="shadow">
+                      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                    </filter>
+                  </defs>
+                  <circle cx="50" cy="50" r="45" fill="url(#assistantGradient)" filter="url(#shadow)"/>
+                  <circle cx="35" cy="40" r="6" fill="white"/>
+                  <circle cx="65" cy="40" r="6" fill="white"/>
+                  <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
+                  <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
+                  <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                </svg>
               </div>
               <div class="welcome-content">
                 <h3>您好！我是您的产品客服助手 👋</h3>
@@ -51,10 +67,41 @@
                 :class="['message', msg.role === 'user' ? 'user-message' : 'assistant-message']"
               >
                 <div class="message-avatar">
-                  <img 
-                    :src="msg.role === 'user' ? userAvatar : assistantAvatar" 
-                    :alt="msg.role === 'user' ? '用户' : '助手'"
-                  >
+                  <template v-if="msg.role === 'user'">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="userGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style="stop-color:#4ade80"/>
+                          <stop offset="100%" style="stop-color:#22c55e"/>
+                        </linearGradient>
+                        <filter id="userShadow">
+                          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                        </filter>
+                      </defs>
+                      <circle cx="50" cy="50" r="45" fill="url(#userGradient)" filter="url(#userShadow)"/>
+                      <circle cx="50" cy="35" r="18" fill="white" opacity="0.9"/>
+                      <path d="M50 55 C30 55 20 65 20 85 L80 85 C80 65 70 55 50 55" fill="white" opacity="0.9"/>
+                    </svg>
+                  </template>
+                  <template v-else>
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="assistantGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style="stop-color:#60a5fa"/>
+                          <stop offset="100%" style="stop-color:#3b82f6"/>
+                        </linearGradient>
+                        <filter id="shadow2">
+                          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                        </filter>
+                      </defs>
+                      <circle cx="50" cy="50" r="45" fill="url(#assistantGradient2)" filter="url(#shadow2)"/>
+                      <circle cx="35" cy="40" r="6" fill="white"/>
+                      <circle cx="65" cy="40" r="6" fill="white"/>
+                      <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
+                      <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
+                      <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                    </svg>
+                  </template>
                 </div>
                 <div class="message-body">
                   <div class="message-content" v-html="formatMessage(msg.content)"></div>
@@ -62,10 +109,27 @@
                 </div>
               </div>
 
-              <!-- 加载状态 -->
-              <div v-if="isLoading" class="message assistant-message">
+              <!-- 加载状态 - 只在最后一条消息是用户消息且正在加载时显示 -->
+              <div v-if="isLoading && messages.length > 0 && messages[messages.length - 1].role === 'user'" 
+                   class="message assistant-message">
                 <div class="message-avatar">
-                  <img :src="assistantAvatar" alt="助手">
+                  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="assistantGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#60a5fa"/>
+                        <stop offset="100%" style="stop-color:#3b82f6"/>
+                      </linearGradient>
+                      <filter id="shadow3">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                      </filter>
+                    </defs>
+                    <circle cx="50" cy="50" r="45" fill="url(#assistantGradient3)" filter="url(#shadow3)"/>
+                    <circle cx="35" cy="40" r="6" fill="white"/>
+                    <circle cx="65" cy="40" r="6" fill="white"/>
+                    <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <circle cx="35" cy="40" r="2" fill="#3b82f6"/>
+                    <circle cx="65" cy="40" r="2" fill="#3b82f6"/>
+                  </svg>
                 </div>
                 <div class="message-body">
                   <div class="typing-indicator">
@@ -173,10 +237,6 @@ const messages = ref<Array<{
   timestamp: number
 }>>([])
 
-// 资源路径
-const userAvatar = '/src/assets/images/avatars/user.png'
-const assistantAvatar = '/src/assets/images/avatars/avatar6.png'
-
 // 用户标识
 const userId = ref(`user-${Date.now()}`)
 const conversationId = ref('')
@@ -221,28 +281,31 @@ const handleSendMessage = async () => {
   // 设置加载状态
   isLoading.value = true
 
-  // 创建临时消息对象
-  const tempMessage = {
-    role: 'assistant' as const,
-    content: '',
-    timestamp: Date.now()
-  }
-  messages.value.push(tempMessage)
-
   try {
     // 使用流式响应
     const cleanup = sendStreamingMessage(
       content,
       {
         onMessage: (text) => {
-          // 更新消息内容
-          tempMessage.content = text
+          // 检查是否已经有助手的回复消息
+          const lastMessage = messages.value[messages.value.length - 1]
+          if (lastMessage && lastMessage.role === 'assistant') {
+            // 更新现有消息
+            lastMessage.content = text
+          } else {
+            // 添加新的助手消息
+            messages.value.push({
+              role: 'assistant',
+              content: text,
+              timestamp: Date.now()
+            })
+          }
           scrollToBottom()
         },
         onError: (error) => {
           console.error('消息发送失败:', error)
           ElMessage.error('消息发送失败，请重试')
-          messages.value = messages.value.filter(msg => msg !== tempMessage)
+          isLoading.value = false
         },
         onComplete: () => {
           isLoading.value = false
@@ -260,7 +323,6 @@ const handleSendMessage = async () => {
   } catch (error) {
     console.error('发送消息失败:', error)
     ElMessage.error('消息发送失败，请重试')
-    messages.value = messages.value.filter(msg => msg !== tempMessage)
     isLoading.value = false
   }
 }
@@ -405,10 +467,9 @@ onMounted(() => {
         overflow: hidden;
         flex-shrink: 0;
 
-        img {
+        svg {
           width: 100%;
           height: 100%;
-          object-fit: cover;
         }
       }
 
@@ -473,11 +534,16 @@ onMounted(() => {
           border-radius: 18px;
           overflow: hidden;
           flex-shrink: 0;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+          transition: transform 0.2s ease;
 
-          img {
+          &:hover {
+            transform: scale(1.05);
+          }
+
+          svg {
             width: 100%;
             height: 100%;
-            object-fit: cover;
           }
         }
 
