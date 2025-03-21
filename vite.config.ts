@@ -77,7 +77,16 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
           rewrite: (path) => path.replace(/^\/api/, ''),
           ws: true,
           headers: {
-            'Authorization': 'Bearer app-SPY0jYMegCqDuDlnCOAcL1qo'
+            'Authorization': 'Bearer app-Q3EVZARAW5weCm971dsrNWsa'
+          },
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              if (req.method === 'OPTIONS') {
+                proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+                proxyReq.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+                proxyReq.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+              }
+            });
           }
         },
         '/table-api': {
@@ -172,7 +181,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
               }
             });
           }
-        }
+        },
       },
     },
     // 生产环境打包配置
